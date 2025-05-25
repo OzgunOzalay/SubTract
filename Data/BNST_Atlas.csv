@@ -1,0 +1,13 @@
+name,x.mni,y.mni,z.mni,lobe,hemi,index
+lAMY,112,121,53,Temporal,L,1
+rAMY,65,123,53,Temporal,R,2
+lINS,53,137,71,Temporal,L,3
+rINS,129,138,70,Temporal,R,4
+lBNS,96,128,72,Temporal,L,5
+rBNS,84,128,72,Temporal,R,6
+lHIP,114,113,51,Temporal,L,7
+rHIP,62,112,53,Temporal,R,8
+lHYP,88,121,61,Temporal,L,9
+rHYP,95,121,62,Temporal,R,10
+lPFC,95,168,64,Frontal,L,11
+rPFC,84,168,64,Frontal,R,12
