@@ -34,7 +34,7 @@ jobs:
       - name: Prepare content for ClickUp API
         id: prepare
         run: |
-          content=$(cat combined.md | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
+          content=$(sed ':a;N;$!ba;s/\n/\\n/g' README.md | sed 's/"/\\"/g')
           echo "content=$content" >> $GITHUB_OUTPUT
 
       - name: Update ClickUp Doc
