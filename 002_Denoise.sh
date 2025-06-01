@@ -5,7 +5,7 @@
 # Disable warning about unused variables
 # shellcheck disable=SC2154
 
-set -e # Exit immediately if a command exits with a non-zero status.
+set -e # Exit immediately if a c ommand exits with a non-zero status.
 
 # Change directory to the analysis directory
 cd "$analysis_dir" || exit
