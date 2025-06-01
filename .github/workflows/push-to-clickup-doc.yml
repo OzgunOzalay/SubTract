@@ -1,0 +1,48 @@
+name: Push README with File Tree to ClickUp
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-clickup-doc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install tree command
+        run: sudo apt-get update && sudo apt-get install -y tree
+
+      - name: Generate folder structure
+        run: |
+          echo "## 📂 Project Structure" > structure.md
+          echo '```' >> structure.md
+          tree -I '.git|node_modules|__pycache__' -L 2 >> structure.md
+          echo '```' >> structure.md
+
+      - name: Combine README and structure
+        run: |
+          cp README.md combined.md
+          echo -e "\n\n" >> combined.md
+          cat structure.md >> combined.md
+
+      - name: Prepare content for ClickUp API
+        id: prepare
+        run: |
+          content=$(cat combined.md | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
+          echo "content=$content" >> $GITHUB_OUTPUT
+
+      - name: Update ClickUp Doc
+        env:
+          CLICKUP_TOKEN: ${{ secrets.CLICKUP_TOKEN }}
+          CLICKUP_DOC_ID: ${{ secrets.CLICKUP_DOC_ID }}
+        run: |
+          curl --request PUT "https://api.clickup.com/api/v2/doc/${CLICKUP_DOC_ID}" \
+          --header "Authorization: $CLICKUP_TOKEN" \
+          --header "Content-Type: application/json" \
+          --data-raw "{
+            \"name\": \"GitHub Synced Doc with File Tree\",
+            \"content\": \"${{ steps.prepare.outputs.content }}\"
+          }"
