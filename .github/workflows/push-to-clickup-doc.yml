@@ -22,11 +22,14 @@ jobs:
           tree -I '.git|node_modules|__pycache__' -L 2 >> structure.md
           echo '```' >> structure.md
 
-      - name: Combine README and structure
+      - name: Append structure to README.md
         run: |
-          cp README.md combined.md
-          echo -e "\n\n" >> combined.md
-          cat structure.md >> combined.md
+          echo -e "\n\n" >> README.md
+          echo "## 📂 Project Structure" >> README.md
+          echo '```' >> README.md
+          tree -I '.git|node_modules|__pycache__' -L 2 >> README.md
+          echo '```' >> README.md
+
 
       - name: Prepare content for ClickUp API
         id: prepare
