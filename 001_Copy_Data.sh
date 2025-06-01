@@ -2,7 +2,7 @@
 
 # This script copies the data from the Data folder to the Analysis folder
 
-# Disable warning about unused variables
+# Disable warning about unused variables    
 # shellcheck disable=SC2154
 
 set -e # Exit immediately if a command exits with a non-zero status.
