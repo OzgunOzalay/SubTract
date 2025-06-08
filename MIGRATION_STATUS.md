@@ -48,6 +48,20 @@
   - Skip existing outputs
   - Robust error handling
 
+- [x] **Step 003: TopUp Distortion Correction** (`src/subtract/preprocessing/distortion_corrector.py`)
+  - FSL TopUp implementation
+  - Dual phase encoding (AP/PA) support
+  - B0 field estimation and correction
+  - Automatic readout time detection
+  - BIDS-compliant metadata handling
+
+- [x] **Step 004: Eddy Current Correction** (`src/subtract/preprocessing/eddy_corrector.py`)
+  - FSL Eddy implementation with CUDA acceleration
+  - Motion and eddy current correction
+  - Brain mask generation using BET
+  - QC metrics and outlier detection
+  - Corrected b-vectors generation
+
 ### **Command Line Interface**
 - [x] **Rich CLI** (`src/subtract/cli.py`)
   - BIDS App-compliant commands
@@ -74,18 +88,6 @@
   - All available options documented
 
 ## 🚧 **Next Steps (Remaining Processing Steps)**
-
-### **Step 003: TopUp Distortion Correction**
-- [ ] `src/subtract/preprocessing/distortion_corrector.py`
-- [ ] FSL TopUp implementation
-- [ ] Dual phase encoding support
-- [ ] B0 field estimation
-
-### **Step 004: Eddy Current Correction**
-- [ ] `src/subtract/preprocessing/motion_corrector.py`
-- [ ] FSL Eddy implementation
-- [ ] CUDA support detection
-- [ ] Motion parameter extraction
 
 ### **Step 007: MRtrix3 Preprocessing**
 - [ ] `src/subtract/preprocessing/mrtrix_preprocessor.py`
@@ -119,27 +121,28 @@
 
 ## 🎯 **Current Status**
 
-**Working Pipeline**: Steps 001-002 (Data Organization + Denoising)
-- ✅ BIDS dataset support
-- ✅ Multi-session handling
-- ✅ Parallel processing
+**Working Pipeline**: Steps 001-004 (Complete Motion & Distortion Correction)
+- ✅ BIDS dataset support with dual phase encoding detection
+- ✅ Multi-session handling and resume capability
+- ✅ CUDA-accelerated processing (Eddy correction)
+- ✅ Comprehensive QC metrics and outlier detection
 - ✅ Error handling and recovery
-- ✅ CLI interface
+- ✅ Beautiful CLI with progress tracking
 
 **Ready for Testing**: 
 ```bash
-# Test with your data
-python test_pipeline.py
+# Complete pipeline through distortion correction
+subtract run /path/to/bids/dataset --steps copy_data denoise topup eddy
 
-# Or use CLI
-python -m subtract.cli run /path/to/bids/dataset --steps copy_data denoise
+# Or test individual steps
+subtract run /path/to/bids/dataset --steps topup --participant-label sub-01
 ```
 
 ## 📋 **Migration Strategy**
 
 1. **Phase 1** (✅ Complete): Core infrastructure + Steps 001-002
-2. **Phase 2** (Next): Steps 003-004 (TopUp + Eddy)
-3. **Phase 3**: Steps 007-009 (MRtrix3 + Tractography)
+2. **Phase 2** (✅ Complete): Steps 003-004 (TopUp + Eddy)
+3. **Phase 3** (Next): Steps 007-009 (MRtrix3 + Tractography)
 4. **Phase 4**: Steps 010-011 (Registration + Connectomics)
 
 ## 🔧 **Key Improvements Over Bash Pipeline**
@@ -155,11 +158,13 @@ python -m subtract.cli run /path/to/bids/dataset --steps copy_data denoise
 
 ## 🚀 **Ready to Continue!**
 
-The foundation is solid and ready for the next processing steps. The pipeline already handles:
-- BIDS dataset discovery and validation
-- Multi-session processing
-- Data organization and denoising
-- Comprehensive error handling
-- Beautiful CLI interface
+The pipeline now provides complete motion and distortion correction capabilities! Current features:
+- ✅ BIDS dataset discovery and validation
+- ✅ Multi-session processing with resume capability
+- ✅ Data organization and MP-PCA denoising
+- ✅ Distortion correction with TopUp (dual PE support)
+- ✅ Motion/eddy current correction with CUDA acceleration
+- ✅ Comprehensive QC metrics and outlier detection
+- ✅ Beautiful CLI interface with rich progress tracking
 
-**Next recommended step**: Implement TopUp distortion correction (Step 003) 
+**Next recommended step**: Implement MRtrix3 preprocessing (Step 007) for response function estimation and FOD computation 

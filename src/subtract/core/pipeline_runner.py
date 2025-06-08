@@ -13,6 +13,8 @@ from ..config.settings import SubtractConfig
 from ..core.base_processor import ProcessingResult
 from ..preprocessing.data_organizer import DataOrganizer
 from ..preprocessing.denoiser import DWIDenoiser
+from ..preprocessing.distortion_corrector import DistortionCorrector
+from ..preprocessing.eddy_corrector import EddyCorrector
 
 
 class PipelineRunner:
@@ -48,9 +50,13 @@ class PipelineRunner:
         if "denoise" in self.config.steps_to_run:
             processors["denoise"] = DWIDenoiser(self.config, self.logger)
         
+        if "topup" in self.config.steps_to_run:
+            processors["topup"] = DistortionCorrector(self.config, self.logger)
+        
+        if "eddy" in self.config.steps_to_run:
+            processors["eddy"] = EddyCorrector(self.config, self.logger)
+        
         # TODO: Add other processors as they are implemented
-        # if "topup" in self.config.steps_to_run:
-        #     processors["topup"] = DistortionCorrector(self.config, self.logger)
         
         # if "eddy" in self.config.steps_to_run:
         #     processors["eddy"] = MotionCorrector(self.config, self.logger)

@@ -114,33 +114,35 @@ class BIDSLayout:
         
         dwi_files = []
         
-        # Find all DWI NIfTI files
+        # Find all DWI NIfTI files (both .nii.gz and .nii)
         for suffix in self.config.bids.dwi_suffixes:
-            pattern = f"*_{suffix}.nii.gz"
-            nii_files = list(dwi_dir.glob(pattern))
-            
-            for nii_file in nii_files:
-                # Extract BIDS entities from filename
-                entities = self._parse_bids_filename(nii_file.name)
+            # Try both .nii.gz and .nii extensions
+            for ext in ['.nii.gz', '.nii']:
+                pattern = f"*_{suffix}{ext}"
+                nii_files = list(dwi_dir.glob(pattern))
                 
-                # Find associated files
-                base_name = nii_file.name.replace('.nii.gz', '')
-                
-                bval_file = dwi_dir / f"{base_name}.bval"
-                bvec_file = dwi_dir / f"{base_name}.bvec"
-                json_file = dwi_dir / f"{base_name}.json"
-                
-                dwi_info = {
-                    'nii': nii_file,
-                    'bval': bval_file if bval_file.exists() else None,
-                    'bvec': bvec_file if bvec_file.exists() else None,
-                    'json': json_file if json_file.exists() else None,
-                    'entities': entities,
-                    'subject': subject,
-                    'session': session
-                }
-                
-                dwi_files.append(dwi_info)
+                for nii_file in nii_files:
+                    # Extract BIDS entities from filename
+                    entities = self._parse_bids_filename(nii_file.name)
+                    
+                    # Find associated files
+                    base_name = nii_file.name.replace(ext, '')
+                    
+                    bval_file = dwi_dir / f"{base_name}.bval"
+                    bvec_file = dwi_dir / f"{base_name}.bvec"
+                    json_file = dwi_dir / f"{base_name}.json"
+                    
+                    dwi_info = {
+                        'nii': nii_file,
+                        'bval': bval_file if bval_file.exists() else None,
+                        'bvec': bvec_file if bvec_file.exists() else None,
+                        'json': json_file if json_file.exists() else None,
+                        'entities': entities,
+                        'subject': subject,
+                        'session': session
+                    }
+                    
+                    dwi_files.append(dwi_info)
         
         return dwi_files
     
@@ -169,24 +171,26 @@ class BIDSLayout:
         anat_suffixes = ["T1w", "T2w", "FLAIR", "PD"]
         
         for suffix in anat_suffixes:
-            pattern = f"*_{suffix}.nii.gz"
-            nii_files = list(anat_dir.glob(pattern))
-            
-            for nii_file in nii_files:
-                entities = self._parse_bids_filename(nii_file.name)
-                base_name = nii_file.name.replace('.nii.gz', '')
-                json_file = anat_dir / f"{base_name}.json"
+            # Try both .nii.gz and .nii extensions
+            for ext in ['.nii.gz', '.nii']:
+                pattern = f"*_{suffix}{ext}"
+                nii_files = list(anat_dir.glob(pattern))
                 
-                anat_info = {
-                    'nii': nii_file,
-                    'json': json_file if json_file.exists() else None,
-                    'entities': entities,
-                    'subject': subject,
-                    'session': session,
-                    'suffix': suffix
-                }
-                
-                anat_files.append(anat_info)
+                for nii_file in nii_files:
+                    entities = self._parse_bids_filename(nii_file.name)
+                    base_name = nii_file.name.replace(ext, '')
+                    json_file = anat_dir / f"{base_name}.json"
+                    
+                    anat_info = {
+                        'nii': nii_file,
+                        'json': json_file if json_file.exists() else None,
+                        'entities': entities,
+                        'subject': subject,
+                        'session': session,
+                        'suffix': suffix
+                    }
+                    
+                    anat_files.append(anat_info)
         
         return anat_files
     

@@ -73,8 +73,8 @@ subtract run /path/to/bids/dataset --participant-label sub-001 sub-002
 # Process specific sessions
 subtract run /path/to/bids/dataset --session-id ses-baseline ses-followup
 
-# Run specific steps only
-subtract run /path/to/bids/dataset --steps copy_data denoise topup
+# Run specific steps only (currently implemented: copy_data, denoise, topup, eddy)
+subtract run /path/to/bids/dataset --steps copy_data denoise topup eddy
 
 # Use custom output directory
 subtract run /path/to/bids/dataset --output-dir /path/to/derivatives
@@ -153,10 +153,31 @@ bids_dataset/
 
 The SubTract pipeline consists of the following steps:
 
+### **✅ Implemented Steps**
+
 1. **copy_data**: Organize BIDS data into analysis directory
+   - BIDS-aware data copying and organization
+   - Metadata preservation and validation
+   - Format conversion (.nii → .nii.gz)
+
 2. **denoise**: DWI denoising using MRtrix3 dwidenoise
+   - MP-PCA denoising algorithm
+   - Multi-threaded processing
+   - Smart resume capability
+
 3. **topup**: Distortion correction using FSL TopUp
+   - Dual phase encoding (AP/PA) support
+   - B0 field estimation and correction
+   - Automatic readout time detection from JSON metadata
+
 4. **eddy**: Motion and eddy current correction using FSL Eddy
+   - CUDA acceleration support (eddy_cuda10.2)
+   - Motion parameter estimation
+   - Eddy current correction with brain masking
+   - QC metrics and outlier detection
+
+### **🚧 Planned Steps**
+
 5. **registration**: Template registration using ANTs (optional)
 6. **mdt**: Microstructure modeling using MDT (optional)
 7. **mrtrix_prep**: MRtrix3 preprocessing (response functions, FOD estimation)

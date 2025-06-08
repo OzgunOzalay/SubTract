@@ -51,7 +51,7 @@ class DWIDenoiser(BaseProcessor):
             if session_id:
                 analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}" / f"ses-{session_id}"
             else:
-                analysis_dir = self.config.paths.analysis_dir / subject_id
+                analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}"
             
             dwi_dir = analysis_dir / "dwi"
             
@@ -96,14 +96,24 @@ class DWIDenoiser(BaseProcessor):
                     # Continue with other files
             
             execution_time = time.time() - start_time
-            success = metrics["files_processed"] > 0
+            # Success if we processed files OR skipped files (outputs already exist)
+            total_files_handled = metrics["files_processed"] + metrics["files_skipped"]
+            success = total_files_handled > 0
+            
+            # Add skipped files to outputs (they already exist)
+            if metrics["files_skipped"] > 0:
+                dwi_files = self._find_dwi_files(dwi_dir)
+                for dwi_file in dwi_files:
+                    expected_output = self._get_expected_output_path(dwi_file)
+                    if expected_output.exists() and expected_output not in outputs:
+                        outputs.append(expected_output)
             
             return ProcessingResult(
                 success=success,
                 outputs=outputs,
                 metrics=metrics,
                 execution_time=execution_time,
-                error_message=None if success else "No files were successfully denoised"
+                error_message=None if success else "No DWI files found to denoise"
             )
             
         except Exception as e:
@@ -138,6 +148,22 @@ class DWIDenoiser(BaseProcessor):
         
         return sorted(dwi_files)
     
+    def _get_expected_output_path(self, input_file: Path) -> Path:
+        """
+        Get the expected output path for a given input file.
+        
+        Args:
+            input_file: Input DWI file path
+            
+        Returns:
+            Expected output file path
+        """
+        if input_file.suffix == ".nii":
+            return input_file.parent / f"{input_file.stem}_denoised.nii.gz"
+        else:  # .nii.gz
+            stem = input_file.name.replace(".nii.gz", "")
+            return input_file.parent / f"{stem}_denoised.nii.gz"
+    
     def _denoise_file(self, input_file: Path) -> Optional[Path]:
         """
         Denoise a single DWI file using MRtrix3 dwidenoise.
@@ -149,22 +175,18 @@ class DWIDenoiser(BaseProcessor):
             Output file path if successful, None if skipped
         """
         # Determine output filename
-        if input_file.suffix == ".nii":
-            output_file = input_file.parent / f"{input_file.stem}_denoised.nii.gz"
-        else:  # .nii.gz
-            stem = input_file.name.replace(".nii.gz", "")
-            output_file = input_file.parent / f"{stem}_denoised.nii.gz"
+        output_file = self._get_expected_output_path(input_file)
         
         # Check if output already exists and we're not forcing overwrite
         if output_file.exists() and not self.config.processing.force_overwrite:
             self.logger.debug(f"Output exists, skipping: {output_file}")
             return None
         
-        # Build dwidenoise command
+        # Build dwidenoise command with absolute paths
         cmd = [
             "dwidenoise",
-            str(input_file),
-            str(output_file),
+            str(input_file.resolve()),
+            str(output_file.resolve()),
             "-force",
             "-nthreads", str(self.config.processing.n_threads)
         ]
@@ -177,8 +199,7 @@ class DWIDenoiser(BaseProcessor):
                 cmd,
                 capture_output=True,
                 text=True,
-                check=True,
-                cwd=input_file.parent
+                check=True
             )
             
             # Log any output from dwidenoise
@@ -218,7 +239,7 @@ class DWIDenoiser(BaseProcessor):
         if session_id:
             analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}" / f"ses-{session_id}"
         else:
-            analysis_dir = self.config.paths.analysis_dir / subject_id
+            analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}"
         
         dwi_dir = analysis_dir / "dwi"
         
@@ -260,7 +281,7 @@ class DWIDenoiser(BaseProcessor):
         if session_id:
             analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}" / f"ses-{session_id}"
         else:
-            analysis_dir = self.config.paths.analysis_dir / subject_id
+            analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}"
         
         dwi_dir = analysis_dir / "dwi"
         
