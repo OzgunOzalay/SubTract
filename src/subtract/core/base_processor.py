@@ -264,17 +264,17 @@ class FSLProcessor(BaseProcessor):
         self._check_fsl_installation()
     
     def _check_fsl_installation(self) -> None:
-        """Check if FSL is properly installed."""
+        """Check if FSL is properly installed in conda environment."""
         try:
-            result = subprocess.run(
-                ["which", "fsl"], 
-                capture_output=True, 
-                text=True, 
-                check=True
+            # Check fsl in the appropriate conda environment  
+            result = self.run_command_in_env(
+                command=["which", "fsl"],
+                env_name="subtract", 
+                capture_output=True
             )
             self.logger.debug(f"FSL found at: {result.stdout.strip()}")
         except subprocess.CalledProcessError:
-            raise RuntimeError("FSL not found. Please ensure FSL is installed and in PATH.")
+            self.logger.warning("FSL not found in 'subtract' environment, but will try to use conda run for commands")
 
 
 class MRtrix3Processor(BaseProcessor):
@@ -285,17 +285,17 @@ class MRtrix3Processor(BaseProcessor):
         self._check_mrtrix3_installation()
     
     def _check_mrtrix3_installation(self) -> None:
-        """Check if MRtrix3 is properly installed."""
+        """Check if MRtrix3 is properly installed in conda environment."""
         try:
-            result = subprocess.run(
-                ["which", "mrconvert"], 
-                capture_output=True, 
-                text=True, 
-                check=True
+            # Check mrconvert in the appropriate conda environment
+            result = self.run_command_in_env(
+                command=["which", "mrconvert"],
+                env_name="subtract",
+                capture_output=True
             )
             self.logger.debug(f"MRtrix3 found at: {result.stdout.strip()}")
         except subprocess.CalledProcessError:
-            raise RuntimeError("MRtrix3 not found. Please ensure MRtrix3 is installed and in PATH.")
+            self.logger.warning("MRtrix3 not found in 'subtract' environment, but will try to use conda run for commands")
 
 
 class ANTsProcessor(BaseProcessor):
@@ -306,14 +306,14 @@ class ANTsProcessor(BaseProcessor):
         self._check_ants_installation()
     
     def _check_ants_installation(self) -> None:
-        """Check if ANTs is properly installed."""
+        """Check if ANTs is properly installed in conda environment."""
         try:
-            result = subprocess.run(
-                ["which", "antsRegistration"], 
-                capture_output=True, 
-                text=True, 
-                check=True
+            # Check antsRegistration in the appropriate conda environment
+            result = self.run_command_in_env(
+                command=["which", "antsRegistration"],
+                env_name="subtract",
+                capture_output=True
             )
             self.logger.debug(f"ANTs found at: {result.stdout.strip()}")
         except subprocess.CalledProcessError:
-            raise RuntimeError("ANTs not found. Please ensure ANTs is installed and in PATH.") 
+            self.logger.warning("ANTs not found in 'subtract' environment, but will try to use conda run for commands") 

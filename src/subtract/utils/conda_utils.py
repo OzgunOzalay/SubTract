@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def get_conda_command(
     command: Union[str, List[str]], 
-    env_name: str = "base"
+    env_name: str = "subtract"
 ) -> List[str]:
     """
     Wrap a command to run in a specific conda environment.
@@ -34,6 +34,7 @@ def get_conda_command(
         command_list = command
     
     # Use conda run to execute in specific environment
+    # This properly handles environment switching and deactivation
     conda_cmd = [
         "conda", "run", "-n", env_name, "--no-capture-output"
     ] + command_list
@@ -43,7 +44,7 @@ def get_conda_command(
 
 def run_in_conda_env(
     command: Union[str, List[str]],
-    env_name: str = "base",
+    env_name: str = "subtract",
     cwd: Optional[Path] = None,
     env: Optional[Dict[str, str]] = None,
     capture_output: bool = True,
@@ -89,46 +90,47 @@ def run_in_conda_env(
 
 # Environment mapping for different tools
 TOOL_ENVIRONMENTS = {
-    # ANTs tools
-    "antsRegistrationSyNQuick.sh": "ANTs",
-    "ConvertTransformFile": "ANTs",
-    "antsRegistration": "ANTs",
-    "antsApplyTransforms": "ANTs",
+    # ANTs tools - use dedicated ants environment
+    "antsRegistrationSyNQuick.sh": "ants",
+    "ConvertTransformFile": "ants", 
+    "antsRegistration": "ants",
+    "antsApplyTransforms": "ants",
     
     # MRtrix3 tools
-    "mrconvert": "mrtrix3",
-    "dwi2response": "mrtrix3", 
-    "dwi2fod": "mrtrix3",
-    "mrcat": "mrtrix3",
-    "mtnormalise": "mrtrix3",
-    "5ttgen": "mrtrix3",
-    "dwiextract": "mrtrix3",
-    "mrmath": "mrtrix3",
-    "transformconvert": "mrtrix3",
-    "mrtransform": "mrtrix3",
-    "5tt2gmwmi": "mrtrix3",
-    "dwidenoise": "mrtrix3",
-    "tckgen": "mrtrix3",
-    "tcksift2": "mrtrix3",
-    "tck2connectome": "mrtrix3",
+    "mrconvert": "subtract",
+    "dwi2response": "subtract", 
+    "dwi2fod": "subtract",
+    "mrcat": "subtract",
+    "mtnormalise": "subtract",
+    "5ttgen": "subtract",
+    "dwiextract": "subtract",
+    "mrmath": "subtract",
+    "transformconvert": "subtract",
+    "mrtransform": "subtract",
+    "5tt2gmwmi": "subtract",
+    "dwidenoise": "subtract",
+    "tckgen": "subtract",
+    "tcksift2": "subtract",
+    "tck2connectome": "subtract",
     
-    # MDT tools
+    # MDT tools - use dedicated mdt environment
     "mdt": "mdt",
     "mdt-create-protocol": "mdt",
     "mdt-create-mask": "mdt",
     "mdt-fit-model": "mdt",
+    "mdt-model-fit": "mdt",
     
-    # FSL tools (use base environment)
-    "fslroi": "base",
-    "fslmerge": "base", 
-    "fslmaths": "base",
-    "topup": "base",
-    "applytopup": "base",
-    "eddy": "base",
-    "eddy_cuda": "base",
-    "bet": "base",
-    "flirt": "base",
-    "fnirt": "base",
+    # FSL tools (use subtract environment)
+    "fslroi": "subtract",
+    "fslmerge": "subtract", 
+    "fslmaths": "subtract",
+    "topup": "subtract",
+    "applytopup": "subtract",
+    "eddy": "subtract",
+    "eddy_cuda": "subtract",
+    "bet": "subtract",
+    "flirt": "subtract",
+    "fnirt": "subtract",
 }
 
 
@@ -149,9 +151,9 @@ def get_tool_environment(command: Union[str, List[str]]) -> str:
     
     # Handle special cases for shell commands
     if tool_name in ["sh", "bash"]:
-        return "base"
+        return "subtract"
     
-    return TOOL_ENVIRONMENTS.get(tool_name, "base")
+    return TOOL_ENVIRONMENTS.get(tool_name, "subtract")
 
 
 def run_tool_command(

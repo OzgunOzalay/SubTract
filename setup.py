@@ -16,7 +16,7 @@ with open("requirements.txt", "r") as f:
 
 setup(
     name="subtract",
-    version="1.1.0",
+    version="1.2.0",
     author="SubTract Development Team",
     author_email="oozalay@unmc.edu",
     description="A Python implementation of microstructure-informed tractography for subcortical connectomics",

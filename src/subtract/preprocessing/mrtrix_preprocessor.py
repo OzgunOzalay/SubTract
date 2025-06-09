@@ -288,12 +288,10 @@ class MRtrixPreprocessor(MRtrix3Processor):
             self.run_command(cmd, cwd=mrtrix_dir)
         else:
             # Generate 5TT from FreeSurfer
-            lut_file = self.config.paths.base_path / "Templates" / "FreeSurferColorLUT.txt"
-            
+            # Use MRtrix3's built-in FreeSurfer color lookup table instead of custom one
             cmd = [
                 "5ttgen", "freesurfer",
                 str(aseg_file),
-                "-lut", str(lut_file),
                 "5tt_nocoreg_fs.mif",
                 "-force"
             ]
