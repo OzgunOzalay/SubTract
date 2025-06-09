@@ -120,29 +120,29 @@ class BIDSLayout:
             for ext in ['.nii.gz', '.nii']:
                 pattern = f"*_{suffix}{ext}"
                 nii_files = list(dwi_dir.glob(pattern))
+            
+            for nii_file in nii_files:
+                # Extract BIDS entities from filename
+                entities = self._parse_bids_filename(nii_file.name)
                 
-                for nii_file in nii_files:
-                    # Extract BIDS entities from filename
-                    entities = self._parse_bids_filename(nii_file.name)
-                    
-                    # Find associated files
-                    base_name = nii_file.name.replace(ext, '')
-                    
-                    bval_file = dwi_dir / f"{base_name}.bval"
-                    bvec_file = dwi_dir / f"{base_name}.bvec"
-                    json_file = dwi_dir / f"{base_name}.json"
-                    
-                    dwi_info = {
-                        'nii': nii_file,
-                        'bval': bval_file if bval_file.exists() else None,
-                        'bvec': bvec_file if bvec_file.exists() else None,
-                        'json': json_file if json_file.exists() else None,
-                        'entities': entities,
-                        'subject': subject,
-                        'session': session
-                    }
-                    
-                    dwi_files.append(dwi_info)
+                # Find associated files
+                base_name = nii_file.name.replace(ext, '')
+                
+                bval_file = dwi_dir / f"{base_name}.bval"
+                bvec_file = dwi_dir / f"{base_name}.bvec"
+                json_file = dwi_dir / f"{base_name}.json"
+                
+                dwi_info = {
+                    'nii': nii_file,
+                    'bval': bval_file if bval_file.exists() else None,
+                    'bvec': bvec_file if bvec_file.exists() else None,
+                    'json': json_file if json_file.exists() else None,
+                    'entities': entities,
+                    'subject': subject,
+                    'session': session
+                }
+                
+                dwi_files.append(dwi_info)
         
         return dwi_files
     

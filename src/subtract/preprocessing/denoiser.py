@@ -193,14 +193,7 @@ class DWIDenoiser(BaseProcessor):
         
         # Execute command
         try:
-            self.logger.debug(f"Running: {' '.join(cmd)}")
-            
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=True
-            )
+            result = self.run_command(cmd)
             
             # Log any output from dwidenoise
             if result.stdout:
@@ -255,11 +248,7 @@ class DWIDenoiser(BaseProcessor):
         
         # Check that MRtrix3 is available
         try:
-            subprocess.run(
-                ["dwidenoise", "--help"],
-                capture_output=True,
-                check=True
-            )
+            self.run_command(["dwidenoise", "--help"])
         except (subprocess.CalledProcessError, FileNotFoundError):
             self.logger.error("MRtrix3 dwidenoise command not found. Please ensure MRtrix3 is installed and in PATH.")
             return False

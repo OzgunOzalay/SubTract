@@ -15,6 +15,8 @@ from ..preprocessing.data_organizer import DataOrganizer
 from ..preprocessing.denoiser import DWIDenoiser
 from ..preprocessing.distortion_corrector import DistortionCorrector
 from ..preprocessing.eddy_corrector import EddyCorrector
+from ..preprocessing.mdt_processor import MDTProcessor
+from ..preprocessing.mrtrix_preprocessor import MRtrixPreprocessor
 
 
 class PipelineRunner:
@@ -56,16 +58,16 @@ class PipelineRunner:
         if "eddy" in self.config.steps_to_run:
             processors["eddy"] = EddyCorrector(self.config, self.logger)
         
-        # TODO: Add other processors as they are implemented
+        if "mdt" in self.config.steps_to_run:
+            processors["mdt"] = MDTProcessor(self.config, self.logger)
         
-        # if "eddy" in self.config.steps_to_run:
-        #     processors["eddy"] = MotionCorrector(self.config, self.logger)
+        if "mrtrix_prep" in self.config.steps_to_run:
+            processors["mrtrix_prep"] = MRtrixPreprocessor(self.config, self.logger)
+        
+        # TODO: Add other processors as they are implemented
         
         # if "registration" in self.config.steps_to_run:
         #     processors["registration"] = TemplateRegistration(self.config, self.logger)
-        
-        # if "mdt" in self.config.steps_to_run:
-        #     processors["mdt"] = MicrostructureProcessor(self.config, self.logger)
         
         # if "mrtrix_prep" in self.config.steps_to_run:
         #     processors["mrtrix_prep"] = MRtrixPreprocessor(self.config, self.logger)

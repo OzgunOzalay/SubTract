@@ -58,7 +58,7 @@ def cli(ctx, verbose):
 @click.option('--session-id', '-s', multiple=True,
               help='Session ID(s) to process')
 @click.option('--steps', multiple=True, 
-              default=['copy_data', 'denoise', 'topup', 'eddy', 'mrtrix_prep', 'tractography', 'sift2', 'roi_registration', 'connectome'],
+              default=['copy_data', 'denoise', 'topup', 'eddy', 'mdt', 'mrtrix_prep', 'tractography', 'sift2', 'roi_registration', 'connectome'],
               help='Pipeline steps to run')
 @click.option('--n-threads', '-t', type=int, default=24,
               help='Number of threads to use')

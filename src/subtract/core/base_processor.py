@@ -12,6 +12,7 @@ import subprocess
 import shlex
 
 from ..config.settings import SubtractConfig
+from ..utils.conda_utils import run_tool_command, run_in_conda_env
 
 
 @dataclass
@@ -121,7 +122,8 @@ class BaseProcessor(ABC):
         command: Union[str, List[str]], 
         cwd: Optional[Path] = None,
         env: Optional[Dict[str, str]] = None,
-        capture_output: bool = True
+        capture_output: bool = True,
+        use_conda: bool = True
     ) -> subprocess.CompletedProcess:
         """
         Run a shell command safely.
@@ -131,35 +133,77 @@ class BaseProcessor(ABC):
             cwd: Working directory
             env: Environment variables
             capture_output: Whether to capture stdout/stderr
+            use_conda: Whether to use appropriate conda environment
             
         Returns:
             CompletedProcess result
         """
-        if isinstance(command, str):
-            command_list = shlex.split(command)
-        else:
-            command_list = command
-        
-        self.logger.debug(f"Running command: {' '.join(command_list)}")
-        
-        try:
-            result = subprocess.run(
-                command_list,
+        if use_conda:
+            # Use conda environment based on tool
+            return run_tool_command(
+                command=command,
                 cwd=cwd,
                 env=env,
                 capture_output=capture_output,
-                text=True,
                 check=True
             )
-            return result
-        except subprocess.CalledProcessError as e:
-            self.logger.error(f"Command failed: {' '.join(command_list)}")
-            self.logger.error(f"Return code: {e.returncode}")
-            if e.stdout:
-                self.logger.error(f"Stdout: {e.stdout}")
-            if e.stderr:
-                self.logger.error(f"Stderr: {e.stderr}")
-            raise
+        else:
+            # Original implementation for non-conda commands
+            if isinstance(command, str):
+                command_list = shlex.split(command)
+            else:
+                command_list = command
+            
+            self.logger.debug(f"Running command: {' '.join(command_list)}")
+            
+            try:
+                result = subprocess.run(
+                    command_list,
+                    cwd=cwd,
+                    env=env,
+                    capture_output=capture_output,
+                    text=True,
+                    check=True
+                )
+                return result
+            except subprocess.CalledProcessError as e:
+                self.logger.error(f"Command failed: {' '.join(command_list)}")
+                self.logger.error(f"Return code: {e.returncode}")
+                if e.stdout:
+                    self.logger.error(f"Stdout: {e.stdout}")
+                if e.stderr:
+                    self.logger.error(f"Stderr: {e.stderr}")
+                raise
+    
+    def run_command_in_env(
+        self,
+        command: Union[str, List[str]],
+        env_name: str,
+        cwd: Optional[Path] = None,
+        env: Optional[Dict[str, str]] = None,
+        capture_output: bool = True
+    ) -> subprocess.CompletedProcess:
+        """
+        Run a command in a specific conda environment.
+        
+        Args:
+            command: Command to run
+            env_name: Conda environment name
+            cwd: Working directory
+            env: Environment variables
+            capture_output: Whether to capture stdout/stderr
+            
+        Returns:
+            CompletedProcess result
+        """
+        return run_in_conda_env(
+            command=command,
+            env_name=env_name,
+            cwd=cwd,
+            env=env,
+            capture_output=capture_output,
+            check=True
+        )
     
     def create_output_directory(self, output_path: Path) -> None:
         """
