@@ -144,7 +144,8 @@ class TrackGenerator(MRtrix3Processor):
         required_files = [
             mrtrix_dir / "wmfod_norm.mif",  # From step 007
             mrtrix_dir / "5tt_coreg_fs_ants.mif",  # From step 007
-            mrtrix_dir / "fs2diff_mrtrix.txt",  # From step 007 ANTs registration
+            mrtrix_dir / "fs2diff_0GenericAffine.mat",  # From step 007 ANTs registration
+            mrtrix_dir / "mean_b0_brain.nii.gz",  # Reference for ANTs transformation
         ]
         
         # Check for BNST ROI files in the project ROIs directory
@@ -182,14 +183,19 @@ class TrackGenerator(MRtrix3Processor):
             
             self.logger.info(f"Transforming {source_name} to diffusion space")
             
-            # Use mrtransform to apply the fsaverage -> diffusion transformation
+            # Use antsApplyTransforms to apply fsaverage -> diffusion transformation
+            # Use absolute paths to avoid any path resolution issues
+            reference_file = mrtrix_dir / "mean_b0_brain.nii.gz"
+            transform_file = mrtrix_dir / "fs2diff_0GenericAffine.mat"
+            
             cmd = [
-                "mrtransform", str(source_file),
-                "--template", str(mrtrix_dir / "mean_b0_brain.mif"),
-                "-linear", str(mrtrix_dir / "fs2diff_mrtrix.txt"),
-                "-interp", "nearest",  # Nearest neighbor for binary masks
-                str(target_file),
-                "-force"
+                "antsApplyTransforms",
+                "-d", "3",
+                "-i", str(source_file.resolve()),
+                "-r", str(reference_file.resolve()),
+                "-t", str(transform_file.resolve()),
+                "--interpolation", "NearestNeighbor",  # Nearest neighbor for binary masks
+                "-o", str(target_file.resolve())
             ]
             
             self.run_command(cmd, cwd=mrtrix_dir)
@@ -202,12 +208,13 @@ class TrackGenerator(MRtrix3Processor):
         mif_files = []
         
         for roi_file in roi_files:
-            mif_file = roi_file.with_suffix('.mif')
+            # Create MIF file with proper naming (replace .nii.gz with .mif)
+            mif_file = roi_file.with_suffix('').with_suffix('').with_suffix('.mif')
             
             self.logger.info(f"Converting {roi_file.name} to MIF format")
             
             cmd = [
-                "mrconvert", str(roi_file), str(mif_file), "-force"
+                "mrconvert", str(roi_file.resolve()), str(mif_file.resolve()), "-force"
             ]
             
             self.run_command(cmd, cwd=mrtrix_dir)
@@ -221,8 +228,8 @@ class TrackGenerator(MRtrix3Processor):
         
         # Map ROI files to track files
         roi_to_track = {
-            "L_bnst_DWI.mif": "tracks_5M_BNST_L.tck",
-            "R_bnst_DWI.mif": "tracks_5M_BNST_R.tck"
+            "L_bnst_DWI.mif": "tracks_1M_BNST_L.tck",
+            "R_bnst_DWI.mif": "tracks_1M_BNST_R.tck"
         }
         
         for roi_file in roi_files:
@@ -237,17 +244,20 @@ class TrackGenerator(MRtrix3Processor):
             
             self.logger.info(f"Generating tracks from BNST {hemisphere} for {subject_id}")
             
-            # Build tckgen command
+            # Build tckgen command with absolute paths
+            act_file = mrtrix_dir / "5tt_coreg_fs_ants.mif"
+            fod_file = mrtrix_dir / "wmfod_norm.mif"
+            
             cmd = [
                 "tckgen",
-                "-act", "5tt_coreg_fs_ants.mif",  # Anatomically constrained tractography
+                "-act", str(act_file.resolve()),  # Anatomically constrained tractography
                 "-backtrack",  # Allow backtracking
-                "-seed_image", str(roi_file),  # Seed from BNST ROI
+                "-seed_image", str(roi_file.resolve()),  # Seed from BNST ROI
                 "-nthreads", str(self.config.processing.n_threads),
-                "-select", str(self.config.processing.n_tracks),  # Number of tracks to generate
+                "-select", "1000000",  # Number of tracks to generate (1M)
                 "-force",
-                "wmfod_norm.mif",  # Input FOD
-                str(track_file)  # Output track file
+                str(fod_file.resolve()),  # Input FOD
+                str(track_file.resolve())  # Output track file
             ]
             
             self.run_command(cmd, cwd=mrtrix_dir)
@@ -258,8 +268,8 @@ class TrackGenerator(MRtrix3Processor):
     def _get_expected_track_files(self, mrtrix_dir: Path) -> List[Path]:
         """Get list of expected track files."""
         return [
-            mrtrix_dir / "tracks_5M_BNST_L.tck",
-            mrtrix_dir / "tracks_5M_BNST_R.tck"
+            mrtrix_dir / "tracks_1M_BNST_L.tck",
+            mrtrix_dir / "tracks_1M_BNST_R.tck"
         ]
     
     def validate_inputs(self, subject_id: str, session_id: Optional[str] = None) -> bool:
@@ -291,6 +301,6 @@ class TrackGenerator(MRtrix3Processor):
             mrtrix_dir / "L_bnst_DWI.mif",
             mrtrix_dir / "R_bnst_DWI.mif",
             # Track files
-            mrtrix_dir / "tracks_5M_BNST_L.tck",
-            mrtrix_dir / "tracks_5M_BNST_R.tck"
+            mrtrix_dir / "tracks_1M_BNST_L.tck",
+            mrtrix_dir / "tracks_1M_BNST_R.tck"
         ] 

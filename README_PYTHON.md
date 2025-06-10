@@ -264,7 +264,7 @@ processing:
   readout_time: null  # Auto-detect from JSON
   eddy_cuda: true
   registration_type: "SyNQuick"
-  n_tracks: 5000000
+  n_tracks: 1000000
   track_algorithm: "iFOD2"
 ```
 
@@ -357,7 +357,7 @@ derivatives/subtract/
 │   │   │   ├── mrtrix3/
 │   │   │   │   ├── response_functions/
 │   │   │   │   ├── fod/
-│   │   │   │   ├── tracks_5M.tck
+│   │   │   │   ├── tracks_1M_BNST_L.tck
 │   │   │   │   ├── sift_weights.txt
 │   │   │   │   ├── ROIs/
 │   │   │   │   └── connectomes/

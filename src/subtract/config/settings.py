@@ -84,7 +84,7 @@ class ProcessingConfig(BaseModel):
     registration_type: str = Field(default="SyNQuick", description="ANTs registration type")
     
     # Tractography parameters
-    n_tracks: int = Field(default=5000000, description="Number of tracks to generate")
+    n_tracks: int = Field(default=1000000, description="Number of tracks to generate")
     track_algorithm: str = Field(default="iFOD2", description="Tracking algorithm")
     
     # SIFT2 parameters
@@ -112,17 +112,6 @@ class ROIConfig(BaseModel):
     )
 
 
-class QualityControlConfig(BaseModel):
-    """Quality control configuration."""
-    
-    generate_qc_reports: bool = Field(default=True, description="Generate QC reports")
-    qc_metrics: List[str] = Field(
-        default=["motion", "signal_dropout", "coverage"],
-        description="QC metrics to compute"
-    )
-    outlier_detection: bool = Field(default=True, description="Enable outlier detection")
-
-
 class SubtractConfig(BaseModel):
     """Main configuration class for SubTract pipeline."""
     
@@ -130,7 +119,6 @@ class SubtractConfig(BaseModel):
     bids: BIDSConfig = Field(default_factory=BIDSConfig)
     processing: ProcessingConfig = Field(default_factory=ProcessingConfig)
     rois: ROIConfig = Field(default_factory=ROIConfig)
-    quality_control: QualityControlConfig = Field(default_factory=QualityControlConfig)
     
     # Pipeline steps to run
     steps_to_run: List[str] = Field(
