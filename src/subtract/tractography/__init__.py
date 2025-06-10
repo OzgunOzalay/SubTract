@@ -8,5 +8,6 @@ This module implements white matter tractography using MRtrix3, including:
 """
 
 from .track_generator import TrackGenerator
+from .track_filter import TrackFilter
 
-__all__ = ["TrackGenerator"] 
+__all__ = ["TrackGenerator", "TrackFilter"] 

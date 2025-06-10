@@ -100,6 +100,52 @@ All notable changes to this project will be documented in this file.
 - **Enhanced**: Improvements to existing functionality
 - **Technical**: Technical improvements and infrastructure changes
 
+## [0.9.0] - 2025-01-27 - SIFT2 Track Filtering Complete
+
+### ✅ Major Features Added
+- **Step 009 SIFT2 Filtering**: Complete implementation of track filtering and optimization
+  - MRtrix3 tcksift2 integration with configurable parameters
+  - NDI-weighted processing mask creation from NODDI data
+  - Track density optimization for improved biological accuracy
+  - Configurable outputs: SIFT2 weights, mu values, coefficients
+  - Multi-hemisphere support for left/right BNST tracks
+
+### 🎛️ Configuration System Enhanced
+- **5 New SIFT2 Parameters**: Fully configurable via YAML
+  - `sift2_term_ratio`: Termination ratio (default: 0.1)
+  - `sift2_ndi_threshold`: NDI threshold for mask creation (default: 0.1)
+  - `sift2_output_coeffs`: Generate coefficients files (default: true)
+  - `sift2_output_mu`: Generate mu values files (default: true)
+  - `sift2_fd_scale_gm`: Advanced GM scaling option (default: false)
+
+### 🧪 Testing & Integration
+- **Full Pipeline Integration**: Step 009 seamlessly integrated into pipeline runner
+- **Configuration Validation**: Type-safe parameter validation with Pydantic
+- **Expected Output Generation**: Proper file tracking and validation
+- **Environment Compatibility**: Uses 'subtract' conda environment for MRtrix3 tools
+
+### 📊 Expected Outputs per Subject
+```
+analysis_dir/{subject}/dwi/mrtrix3/
+├── ndi_5tt_mask.mif              # NDI-weighted processing mask
+├── sift_1M_BNST_L.txt           # SIFT2 weights - Left
+├── sift_1M_BNST_R.txt           # SIFT2 weights - Right
+├── sift_mu_1M_BNST_L.txt        # Mu values - Left (optional)
+├── sift_mu_1M_BNST_R.txt        # Mu values - Right (optional)
+├── sift_coeffs_1M_BNST_L.txt    # Coefficients - Left (optional)
+└── sift_coeffs_1M_BNST_R.txt    # Coefficients - Right (optional)
+```
+
+### 🎯 Current Status
+- **Complete Pipeline**: Steps 001-009 (Preprocessing through SIFT2 Filtering)
+- **Next Phase**: Steps 010-011 (ROI Registration, Connectomics)
+- **Migration Progress**: 82% complete (9/11 major steps)
+
+### 🔧 Breaking Changes
+- None - backwards compatible with existing configurations
+
+---
+
 ## [0.8.0] - 2025-01-XX - Tractography Implementation Complete
 
 ### ✅ Major Features Added
@@ -222,12 +268,9 @@ All notable changes to this project will be documented in this file.
 
 ## 🚀 Upcoming Releases
 
-### [0.9.0] - SIFT2 Track Filtering
-- Step 009 implementation
-- Track density optimization
-- Weight computation
-
-### [1.0.0] - Complete Pipeline
+### [1.0.0] - Complete Pipeline Release
 - Steps 010-011 (ROI Registration + Connectomics)
 - Full connectivity matrix generation
-- Production-ready release 
+- Production-ready release
+
+ 

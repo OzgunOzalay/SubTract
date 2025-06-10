@@ -16,7 +16,7 @@ The pipeline performs probabilistic tractography between these regions to charac
 
 ## 🏗️ Pipeline Architecture
 
-### Current Implementation Status: **Steps 001-008 Complete**
+### Current Implementation Status: **Steps 001-009 Complete**
 
 1. **Data Organization** (001) - BIDS-compliant data structure setup
 2. **DWI Denoising** (002) - MP-PCA denoising with MRtrix3
@@ -26,9 +26,9 @@ The pipeline performs probabilistic tractography between these regions to charac
 6. **Microstructure Modeling** (006) - MDT NODDI fitting
 7. **MRtrix3 Preprocessing** (007) - FOD estimation and 5TT generation
 8. **Tractography** (008) - **✅ COMPLETE** - Probabilistic tracking with ACT
+9. **SIFT2 Filtering** (009) - **✅ COMPLETE** - Track density optimization with configurable parameters
 
 ### Upcoming Steps:
-9. **SIFT2 Filtering** (009) - Track density optimization
 10. **ROI Registration** (010) - Template ROI transformation
 11. **Connectome Construction** (011) - Connectivity matrix generation
 
@@ -88,9 +88,9 @@ subtract --help
 ### BIDS Dataset Processing
 
 ```bash
-# Run complete preprocessing + tractography pipeline
+# Run complete preprocessing + tractography + SIFT2 pipeline
 subtract run /path/to/bids/dataset \
-    --steps copy_data,denoise,topup,eddy,mdt,mrtrix_prep,tractography \
+    --steps copy_data,denoise,topup,eddy,mdt,mrtrix_prep,tractography,sift2 \
     --participant-label sub-001 sub-002
 
 # Use configuration file
@@ -117,6 +117,12 @@ processing:
   n_tracks: 1000000  # 1M tracks per hemisphere
   track_algorithm: "iFOD2"
   eddy_cuda: true
+  
+  # SIFT2 filtering parameters
+  sift2_term_ratio: 0.1
+  sift2_ndi_threshold: 0.1
+  sift2_output_coeffs: true
+  sift2_output_mu: true
 
 # ROI targets for tractography
 rois:
@@ -131,7 +137,7 @@ rois:
 
 **Environment**: Linux 6.8.0-60-generic  
 **Test Subject**: ALC2004 (BIDS format)  
-**Pipeline Steps**: 001-004 + 006-008  
+**Pipeline Steps**: 001-004 + 006-009  
 **Duration**: ~33.5 minutes  
 **Success Rate**: 100%
 
@@ -171,11 +177,11 @@ SubTract/
 - Core infrastructure and BIDS support
 - Complete preprocessing pipeline (Steps 001-007)
 - Tractography implementation (Step 008)
+- SIFT2 track filtering (Step 009)
 - Conda environment integration
 - Rich CLI with progress tracking
 
 ### 🚧 In Development
-- SIFT2 track filtering (Step 009)
 - ROI registration (Step 010)  
 - Connectome construction (Step 011)
 

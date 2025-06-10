@@ -89,6 +89,10 @@ class ProcessingConfig(BaseModel):
     
     # SIFT2 parameters
     sift2_term_ratio: float = Field(default=0.1, description="SIFT2 termination ratio")
+    sift2_ndi_threshold: float = Field(default=0.1, description="NDI threshold for SIFT2 processing mask")
+    sift2_output_coeffs: bool = Field(default=True, description="Generate SIFT2 coefficients files")
+    sift2_output_mu: bool = Field(default=True, description="Generate mu (proportionality coefficient) files")
+    sift2_fd_scale_gm: bool = Field(default=False, description="Scale fibre density by GM volume")
 
 
 class ROIConfig(BaseModel):

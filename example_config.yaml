@@ -31,7 +31,13 @@ processing:
   registration_type: "SyNQuick"
   n_tracks: 1000000
   track_algorithm: "iFOD2"
+  
+  # SIFT2 parameters
   sift2_term_ratio: 0.1
+  sift2_ndi_threshold: 0.1  # NDI threshold for processing mask (original: 0.1)
+  sift2_output_coeffs: true  # Generate SIFT2 coefficients files
+  sift2_output_mu: true      # Generate mu (proportionality coefficient) files
+  sift2_fd_scale_gm: false   # Scale fibre density by GM volume (optional)
 
 rois:
   roi_names:
