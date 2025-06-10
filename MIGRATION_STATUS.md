@@ -111,10 +111,12 @@
 ## 🚧 **Next Steps (Remaining Processing Steps)**
 
 ### **Step 008: Tractography**
-- [ ] `src/subtract/tractography/track_generator.py`
-- [ ] Probabilistic tracking
-- [ ] Seed region handling
-- [ ] Track file management
+- [x] `src/subtract/tractography/track_generator.py`
+- [x] BNST ROI transformation from fsaverage to diffusion space
+- [x] Probabilistic tracking with MRtrix3 tckgen
+- [x] Anatomically constrained tractography (ACT)
+- [x] Seed region handling for left/right BNST
+- [x] Track file management (5M tracks per hemisphere)
 
 ### **Step 009: SIFT2 Filtering**
 - [ ] `src/subtract/tractography/track_filter.py`
@@ -136,7 +138,7 @@
 
 ## 🎯 **Current Status**
 
-**Working Pipeline**: Steps 001-004 + 006-007 (Complete Preprocessing through MRtrix3)
+**Working Pipeline**: Steps 001-004 + 006-008 (Complete Preprocessing through Tractography)
 - ✅ BIDS dataset support with dual phase encoding detection
 - ✅ Multi-session handling and resume capability
 - ✅ CUDA-accelerated processing (Eddy correction)
@@ -146,14 +148,17 @@
 - ✅ Error handling and recovery
 - ✅ Beautiful CLI with progress tracking
 
-**✅ Successfully Tested**: 
+**✅ Successfully Implemented**: 
 ```bash
-# ✅ COMPLETE PIPELINE TESTED: Steps 001-004 + 006-007
-subtract run Data/ --parallel --n-threads 16
+# ✅ PIPELINE EXTENDED: Steps 001-004 + 006-008
+# - Step 008 (Tractography) now fully implemented and integrated
+# - ROI transformation from fsaverage to diffusion space
+# - Probabilistic tracking with ACT and backtracking
+# - Ready for testing with: subtract run Data/ --steps copy_data,denoise,topup,eddy,mdt,mrtrix_prep,tractography
 
-# Test Results (December 2024):
+# Previous Test Results (December 2024):
 # - Subjects: 2 (ALC2156, ALC2161)
-# - Success Rate: 100% 
+# - Success Rate: 100% through step 007
 # - Execution Time: 27.1s
 # - All steps successful: copy_data, denoise, topup, eddy, mdt, mrtrix_prep
 ```
@@ -162,7 +167,7 @@ subtract run Data/ --parallel --n-threads 16
 
 1. **Phase 1** (✅ Complete): Core infrastructure + Steps 001-002
 2. **Phase 2** (✅ Complete): Steps 003-004 (TopUp + Eddy)
-3. **Phase 3** (Next): Steps 007-009 (MRtrix3 + Tractography)
+3. **Phase 3** (✅ Step 008 Complete): Steps 007-009 (MRtrix3 + Tractography)
 4. **Phase 4**: Steps 010-011 (Registration + Connectomics)
 
 ## 🔧 **Key Improvements Over Bash Pipeline**
@@ -198,7 +203,7 @@ The pipeline now provides complete motion and distortion correction capabilities
 - ✅ Comprehensive QC metrics and outlier detection
 - ✅ Beautiful CLI interface with rich progress tracking
 
-**Next recommended step**: Implement Step 008 (Tractography) to continue the pipeline toward connectomics analysis
+**Next recommended step**: Implement Step 009 (SIFT2 Filtering) to continue the tractography pipeline refinement
 
 ## 🧪 **Testing Summary (December 2024)**
 

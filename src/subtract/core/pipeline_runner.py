@@ -17,6 +17,7 @@ from ..preprocessing.distortion_corrector import DistortionCorrector
 from ..preprocessing.eddy_corrector import EddyCorrector
 from ..preprocessing.mdt_processor import MDTProcessor
 from ..preprocessing.mrtrix_preprocessor import MRtrixPreprocessor
+from ..tractography.track_generator import TrackGenerator
 
 
 class PipelineRunner:
@@ -63,6 +64,9 @@ class PipelineRunner:
         
         if "mrtrix_prep" in self.config.steps_to_run:
             processors["mrtrix_prep"] = MRtrixPreprocessor(self.config, self.logger)
+        
+        if "tractography" in self.config.steps_to_run:
+            processors["tractography"] = TrackGenerator(self.config, self.logger)
         
         # TODO: Add other processors as they are implemented
         
