@@ -88,7 +88,7 @@ class ProcessingConfig(BaseModel):
     track_algorithm: str = Field(default="iFOD2", description="Tracking algorithm")
     
     # SIFT2 parameters
-    sift2_term_ratio: float = Field(default=0.1, description="SIFT2 termination ratio")
+    sift2_term_ratio: float = Field(default=0.1, description="SIFT2 minimum cost function decrease (as fraction of initial value) for algorithm continuation")
     sift2_ndi_threshold: float = Field(default=0.1, description="NDI threshold for SIFT2 processing mask")
     sift2_output_coeffs: bool = Field(default=True, description="Generate SIFT2 coefficients files")
     sift2_output_mu: bool = Field(default=True, description="Generate mu (proportionality coefficient) files")
@@ -128,7 +128,7 @@ class SubtractConfig(BaseModel):
     steps_to_run: List[str] = Field(
         default=[
             "copy_data", "denoise", "topup", "eddy", 
-            "registration", "mdt", "mrtrix_prep", 
+            "mdt", "mrtrix_prep", 
             "tractography", "sift2", "roi_registration", 
             "connectome"
         ],

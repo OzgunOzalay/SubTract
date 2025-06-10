@@ -6,7 +6,7 @@ This package provides a complete pipeline for white matter tractography analysis
 with a focus on the BNST (Bed Nucleus of the Stria Terminalis) and amygdala.
 """
 
-__version__ = "1.2.0"
+__version__ = "1.0.0-alpha"
 __author__ = "SubTract Development Team"
 __email__ = "oozalay@unmc.edu"
 

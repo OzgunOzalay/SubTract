@@ -19,6 +19,15 @@ from ..preprocessing.mdt_processor import MDTProcessor
 from ..preprocessing.mrtrix_preprocessor import MRtrixPreprocessor
 from ..tractography.track_generator import TrackGenerator
 from ..tractography.track_filter import TrackFilter
+from ..registration.roi_registration import ROIRegistration
+try:
+    from ..connectome.connectivity_matrix import ConnectivityMatrix
+except ImportError:
+    # Fall back to absolute import if relative import fails
+    try:
+        from subtract.connectome.connectivity_matrix import ConnectivityMatrix
+    except ImportError:
+        ConnectivityMatrix = None
 
 
 class PipelineRunner:
@@ -72,25 +81,14 @@ class PipelineRunner:
         if "sift2" in self.config.steps_to_run:
             processors["sift2"] = TrackFilter(self.config, self.logger)
         
-        # TODO: Add other processors as they are implemented
+        if "roi_registration" in self.config.steps_to_run:
+            processors["roi_registration"] = ROIRegistration(self.config, self.logger)
         
-        # if "registration" in self.config.steps_to_run:
-        #     processors["registration"] = TemplateRegistration(self.config, self.logger)
-        
-        # if "mrtrix_prep" in self.config.steps_to_run:
-        #     processors["mrtrix_prep"] = MRtrixPreprocessor(self.config, self.logger)
-        
-        # if "tractography" in self.config.steps_to_run:
-        #     processors["tractography"] = TrackGenerator(self.config, self.logger)
-        
-        # if "sift2" in self.config.steps_to_run:
-        #     processors["sift2"] = TrackFilter(self.config, self.logger)
-        
-        # if "roi_registration" in self.config.steps_to_run:
-        #     processors["roi_registration"] = ROIRegistration(self.config, self.logger)
-        
-        # if "connectome" in self.config.steps_to_run:
-        #     processors["connectome"] = ConnectomeBuilder(self.config, self.logger)
+        if "connectome" in self.config.steps_to_run:
+            if ConnectivityMatrix is not None:
+                processors["connectome"] = ConnectivityMatrix(self.config, self.logger)
+            else:
+                self.logger.warning("ConnectivityMatrix not available, skipping connectome step")
         
         return processors
     

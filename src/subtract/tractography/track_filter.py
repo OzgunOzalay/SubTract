@@ -64,25 +64,27 @@ class TrackFilter(MRtrix3Processor):
         metrics = {}
         
         try:
-            # Determine directory structure
+            # Use BIDS format for directory structure
             if session_id:
                 analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}" / f"ses-{session_id}"
                 session_str = f" session {session_id}"
             else:
-                analysis_dir = self.config.paths.analysis_dir / subject_id
+                analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}"
                 session_str = ""
             
             mrtrix_dir = analysis_dir / "dwi" / "mrtrix3"
             
             self.logger.info(f"Starting SIFT2 filtering for subject: {subject_id}{session_str}")
+            self.logger.debug(f"Analysis directory constructed as: {analysis_dir}")
+            self.logger.debug(f"Analysis directory exists: {analysis_dir.exists()}")
             
             # Validate prerequisites
-            if not self._validate_prerequisites(subject_id, mrtrix_dir):
+            if not self._validate_prerequisites(subject_id, analysis_dir, mrtrix_dir):
                 raise FileNotFoundError("Missing prerequisite files for SIFT2 filtering")
             
             # Step 1: Create NDI-weighted processing mask
             self.logger.info("Step 1: Creating NDI-weighted processing mask")
-            mask_file = self._create_ndi_weighted_mask(subject_id, mrtrix_dir)
+            mask_file = self._create_ndi_weighted_mask(subject_id, analysis_dir, mrtrix_dir)
             outputs.append(mask_file)
             
             # Step 2: Apply SIFT2 filtering to both hemispheres
@@ -94,7 +96,6 @@ class TrackFilter(MRtrix3Processor):
             metrics["sift2_files_generated"] = len(sift2_files)
             metrics["hemispheres_processed"] = 2
             metrics["ndi_threshold_used"] = self.config.processing.sift2_ndi_threshold
-            metrics["termination_ratio_used"] = self.config.processing.sift2_term_ratio
             
             execution_time = time.time() - start_time
             
@@ -119,7 +120,7 @@ class TrackFilter(MRtrix3Processor):
                 error_message=error_msg
             )
     
-    def _validate_prerequisites(self, subject_id: str, mrtrix_dir: Path) -> bool:
+    def _validate_prerequisites(self, subject_id: str, analysis_dir: Path, mrtrix_dir: Path) -> bool:
         """Validate that all prerequisite files exist."""
         # Files from previous steps
         required_files = [
@@ -129,16 +130,20 @@ class TrackFilter(MRtrix3Processor):
             mrtrix_dir / "tracks_1M_BNST_R.tck",    # From step 008 (Tractography)
         ]
         
-        # NDI file from MDT processing (step 006)
-        # Check both potential locations for NODDI output
-        subject_dir = mrtrix_dir.parent.parent  # Go up to subject level
+        # NDI file from MDT processing (step 006) - BIDS format
         noddi_paths = [
-            subject_dir / "dwi" / "mdt" / "output" / f"{subject_id}_brain_mask" / "NODDIDA" / "NDI.nii.gz",
-            subject_dir / "dwi" / "mdt" / "NODDIDA" / "NDI.nii.gz",  # Alternative location
+            # Current actual structure: BIDS subject dir + legacy brain mask folder name  
+            analysis_dir / "dwi" / "mdt" / "output" / f"{subject_id}_brain_mask" / "NODDIDA" / "NDI.nii.gz",
+            # Alternative simplified location
+            analysis_dir / "dwi" / "mdt" / "NODDIDA" / "NDI.nii.gz",
         ]
+        
+        self.logger.debug(f"Analysis dir parameter: {analysis_dir}")
+        self.logger.debug(f"Searching for NDI in paths: {[str(p) for p in noddi_paths]}")
         
         ndi_file = None
         for ndi_path in noddi_paths:
+            self.logger.debug(f"Checking path: {ndi_path} (exists: {ndi_path.exists()})")
             if ndi_path.exists():
                 ndi_file = ndi_path
                 break
@@ -160,13 +165,12 @@ class TrackFilter(MRtrix3Processor):
         
         return True
     
-    def _create_ndi_weighted_mask(self, subject_id: str, mrtrix_dir: Path) -> Path:
+    def _create_ndi_weighted_mask(self, subject_id: str, analysis_dir: Path, mrtrix_dir: Path) -> Path:
         """Create NDI-weighted processing mask for SIFT2."""
-        # Find NDI file from NODDI processing
-        subject_dir = mrtrix_dir.parent.parent
+        # Find NDI file from NODDI processing - BIDS format
         noddi_paths = [
-            subject_dir / "dwi" / "mdt" / "output" / f"{subject_id}_brain_mask" / "NODDIDA" / "NDI.nii.gz",
-            subject_dir / "dwi" / "mdt" / "NODDIDA" / "NDI.nii.gz",
+            analysis_dir / "dwi" / "mdt" / "output" / f"{subject_id}_brain_mask" / "NODDIDA" / "NDI.nii.gz",
+            analysis_dir / "dwi" / "mdt" / "NODDIDA" / "NDI.nii.gz",
         ]
         
         ndi_file = None
@@ -225,7 +229,7 @@ class TrackFilter(MRtrix3Processor):
             sift_weights = mrtrix_dir / f"sift_1M_BNST_{config['suffix']}.txt"
             output_files.append(sift_weights)
             
-            # Build tcksift2 command
+            # Build tcksift2 command - NO TERM_RATIO PARAMETER
             cmd = [
                 "tcksift2",
                 "-proc_mask", str(mask_file.resolve()),
@@ -246,11 +250,7 @@ class TrackFilter(MRtrix3Processor):
                 cmd.extend(["-out_coeffs", str(coeffs_file.resolve())])
                 output_files.append(coeffs_file)
             
-            # Add termination ratio if configured
-            if hasattr(self.config.processing, 'sift2_term_ratio'):
-                cmd.extend(["-term_ratio", str(self.config.processing.sift2_term_ratio)])
-            
-            # Run SIFT2
+            # Run SIFT2 without any termination ratio parameter
             self.run_command(cmd, cwd=mrtrix_dir)
         
         return output_files
@@ -260,18 +260,18 @@ class TrackFilter(MRtrix3Processor):
         if session_id:
             analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}" / f"ses-{session_id}"
         else:
-            analysis_dir = self.config.paths.analysis_dir / subject_id
+            analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}"
         
         mrtrix_dir = analysis_dir / "dwi" / "mrtrix3"
         
-        return self._validate_prerequisites(subject_id, mrtrix_dir)
+        return self._validate_prerequisites(subject_id, analysis_dir, mrtrix_dir)
     
     def get_expected_outputs(self, subject_id: str, session_id: Optional[str] = None) -> List[Path]:
         """Get list of expected output files."""
         if session_id:
             analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}" / f"ses-{session_id}"
         else:
-            analysis_dir = self.config.paths.analysis_dir / subject_id
+            analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}"
         
         mrtrix_dir = analysis_dir / "dwi" / "mrtrix3"
         

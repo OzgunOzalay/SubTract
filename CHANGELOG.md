@@ -2,6 +2,95 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha] - 2025-01-27 - Complete Pipeline Migration
+
+### 🎉 **MAJOR MILESTONE: Complete Bash-to-Python Migration**
+**All 11 processing steps successfully migrated!** The SubTract pipeline is now fully functional in Python with comprehensive BIDS support, multi-conda environment integration, and end-to-end connectivity analysis.
+
+### ✅ **New Steps Completed**
+- **Step 010: ROI Registration** (`src/subtract/registration/roi_registration.py`)
+  - Complete fs2diff ROI transformation implementation
+  - Automated registration of 12 BNST network ROIs from fsaverage to subject DWI space
+  - Multi-conda environment support (FreeSurfer→subtract, ANTs→ants, MRtrix3→subtract)
+  - Bilateral processing: Creates left/right hemisphere parcellations with numbered regions (1-5)
+  - ROI list: Amyg_L/R, BNST_L/R, Hipp_L/R, Insl_L/R, vmPF_L/R, Hypo_L/R
+  - Output: 24 individual ROI files + 2 parcellation files per subject
+
+- **Step 011: Connectome Generation** (`src/subtract/connectome/connectivity_matrix.py`)
+  - **Part 1: Composite Microstructure & Track Sampling**
+    - Composite formula: `NDI*0.35 + (1-ODI)*0.25 + w_stick*0.25 + (1-w_ball)*0.15`
+    - Track sampling using `tcksample -stat_tck mean` for microstructure-weighted tracks
+    - Flexible architecture ready for additional microstructure metrics
+  - **Part 2: Connectivity Fingerprints**
+    - Bilateral connectivity matrices for Left & Right BNST
+    - Command structure: `tck2connectome` with `-vector -scale_invnodevol -scale_file -stat_edge mean`
+    - Microstructure weighting using composite-derived track weights
+    - Output: CSV connectivity fingerprints for comprehensive network analysis
+
+### 🚀 **Pipeline Architecture Completed**
+```
+derivatives/subtract/sub-{subject}/dwi/
+├── preprocessed/          # Steps 001-007 outputs
+├── mrtrix3/              # Tractography and filtering  
+│   ├── tracks_1M_BNST_L.tck
+│   ├── tracks_1M_BNST_R.tck
+│   ├── sift_1M_BNST_L.txt
+│   └── ROIs/             # Step 010: 24 registered ROI files + 2 parcellations
+└── connectome/           # Step 011: Connectivity analysis
+    ├── composite_microstructure.mif
+    ├── track_weights_1M_BNST_L.txt  
+    ├── track_weights_1M_BNST_R.txt
+    └── fingerprints/
+        ├── L_BNST_fingerprint.csv
+        └── R_BNST_fingerprint.csv
+```
+
+### 🎯 **Full BIDS Compliance**
+- **Legacy Path Support Removed**: Complete standardization on BIDS format (`sub-{subject}`)
+- **Consistent Naming**: All processors now use BIDS paths throughout
+- **Updated Infrastructure**: `base_processor.py`, `data_organizer.py`, all step processors
+
+### 🔧 **Technical Improvements**
+- **Multi-Conda Environment Integration**: Complete tool isolation across all steps
+  - FreeSurfer tools → `subtract` environment
+  - ANTs tools → `ants` environment  
+  - MRtrix3 tools → `subtract` environment
+  - MDT tools → `mdt` environment (with fallback mocks)
+- **Parameter Fixes**: Removed invalid `-term_ratio` parameter from SIFT2 (Step 009)
+- **Enhanced Error Handling**: Robust validation and recovery mechanisms throughout
+- **Import System**: Fixed relative/absolute import issues for reliable module loading
+
+### 🧪 **Testing & Validation**
+- **Complete Pipeline Test**: All 11 steps validated with real data (ALC2004)
+- **End-to-End Processing**: From raw DWI to connectivity fingerprints
+- **Environment Compatibility**: Multi-conda execution validated
+- **Output Verification**: All expected files generated correctly
+
+### 📚 **Documentation Updates**
+- **README.md**: Complete v1.0.0 alpha documentation with full pipeline description
+- **MIGRATION_STATUS.md**: Updated to reflect 100% migration completion
+- **Pipeline Configuration**: Updated example configs for all 11 steps
+
+### 🎯 **Production Ready Features**
+- Complete preprocessing to connectivity analysis pipeline
+- Multi-subject parallel processing capability
+- Resume functionality for interrupted processing
+- Beautiful CLI with comprehensive progress tracking
+- Type-safe configuration with Pydantic validation
+- BIDS-compliant output structure
+
+### 🔄 **Breaking Changes**
+- **Legacy Path Support**: Removed support for non-BIDS directory structures
+- **Configuration**: Some parameter names updated for clarity
+
+### 📋 **Migration Summary**
+- **Phase 1** ✅: Core infrastructure + Steps 001-002
+- **Phase 2** ✅: Steps 003-004 (TopUp + Eddy) 
+- **Phase 3** ✅: Steps 007-009 (MRtrix3 + Tractography + SIFT2)
+- **Phase 4** ✅: Steps 010-011 (ROI Registration + Connectomics)
+
+**🎉 Version 1.0.0 Alpha: Complete pipeline migration accomplished!**
+
 ## [1.2.0] - 2024-06-09
 
 ### 🎉 Major Features

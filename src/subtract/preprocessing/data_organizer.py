@@ -237,7 +237,7 @@ class DataOrganizer(BaseProcessor):
         metrics = {}
         
         source_dir = self.config.paths.data_dir / subject_id
-        analysis_dir = self.config.paths.analysis_dir / subject_id
+        analysis_dir = self.config.paths.analysis_dir / f"sub-{subject_id}"
         
         if not source_dir.exists():
             return ProcessingResult(
@@ -353,7 +353,7 @@ class DataOrganizer(BaseProcessor):
         Returns:
             List of expected output paths
         """
-        dest_dir = self.config.paths.analysis_dir / subject_id
+        dest_dir = self.config.paths.analysis_dir / f"sub-{subject_id}"
         
         # Return the main subject directory as the primary output
         # Additional files will be discovered during processing
@@ -369,7 +369,7 @@ class DataOrganizer(BaseProcessor):
         Returns:
             List of DWI file paths
         """
-        subject_dir = self.config.paths.analysis_dir / subject_id
+        subject_dir = self.config.paths.analysis_dir / f"sub-{subject_id}"
         dwi_dir = subject_dir / "dwi"
         
         if not dwi_dir.exists():
@@ -397,7 +397,7 @@ class DataOrganizer(BaseProcessor):
         Returns:
             Tuple of (bval_file, bvec_file) or (None, None) if not found
         """
-        subject_dir = self.config.paths.analysis_dir / subject_id
+        subject_dir = self.config.paths.analysis_dir / f"sub-{subject_id}"
         dwi_dir = subject_dir / "dwi"
         
         if not dwi_dir.exists():

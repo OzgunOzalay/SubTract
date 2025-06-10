@@ -220,16 +220,16 @@ class BaseProcessor(ABC):
     
     def get_subject_dir(self, subject_id: str, subdir: Optional[str] = None) -> Path:
         """
-        Get subject-specific directory path.
+        Get subject-specific directory path in BIDS format.
         
         Args:
-            subject_id: Subject identifier
+            subject_id: Subject identifier (without "sub-" prefix)
             subdir: Optional subdirectory
             
         Returns:
             Path to subject directory
         """
-        subject_path = self.config.paths.analysis_dir / subject_id
+        subject_path = self.config.paths.analysis_dir / f"sub-{subject_id}"
         
         if subdir:
             subject_path = subject_path / subdir
