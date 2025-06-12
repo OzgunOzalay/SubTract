@@ -8,7 +8,7 @@ The complete SubTract pipeline is now available! All 11 processing steps have be
 
 ## 🧠 Scientific Background
 
-SubTract is specifically designed for analyzing white matter connectivity in limbic circuits, particularly:
+SubTract is specifically designed for an alyzing white matter connectivity in limbic circuits, particularly :
 
 - **Bed Nucleus of the Stria Terminalis (BNST)**: A key component of the extended amygdala
 - **Amygdala**: Central to fear and emotional processing  
