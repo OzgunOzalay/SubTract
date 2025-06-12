@@ -52,26 +52,44 @@ def cli(ctx, verbose):
 @cli.command()
 @click.argument('bids_dir', type=click.Path(exists=True, path_type=Path))
 @click.option('--output-dir', '-o', type=click.Path(path_type=Path), 
-              help='Output directory (default: BIDS_DIR/derivatives/subtract)')
+              help='Output directory for pipeline results (default: BIDS_DIR/derivatives/subtract)')
 @click.option('--participant-label', '-p', multiple=True, 
-              help='Participant label(s) to process')
+              help='One or more participant labels to process (e.g., sub-001 sub-002)')
 @click.option('--session-id', '-s', multiple=True,
-              help='Session ID(s) to process')
+              help='One or more session IDs to process (e.g., ses-baseline ses-followup)')
 @click.option('--steps', multiple=True, 
               default=['copy_data', 'denoise', 'topup', 'eddy', 'mdt', 'mrtrix_prep', 'tractography', 'sift2', 'roi_registration', 'connectome'],
-              help='Pipeline steps to run')
+              help='Pipeline steps to run (comma-separated or multiple --steps flags). Available steps:\n'
+                   '  copy_data: Copy and organize BIDS data\n'
+                   '  denoise: DWI denoising using MP-PCA\n'
+                   '  topup: Field map estimation and correction\n'
+                   '  eddy: Eddy current and motion correction\n'
+                   '  mdt: Microstructure modeling (NODDI, DTI)\n'
+                   '  mrtrix_prep: MRtrix3 preprocessing (response, FOD)\n'
+                   '  tractography: Generate 1M tracks per hemisphere\n'
+                   '  sift2: Track filtering and optimization\n'
+                   '  roi_registration: ROI registration to subject space\n'
+                   '  connectome: Generate connectivity matrices')
 @click.option('--n-threads', '-t', type=int, default=24,
-              help='Number of threads to use')
+              help='Number of CPU threads to use for parallel processing')
 @click.option('--force', is_flag=True,
-              help='Force overwrite existing outputs')
+              help='Force overwrite existing outputs (use with caution)')
 @click.option('--parallel', is_flag=True,
-              help='Run subjects in parallel')
+              help='Process multiple subjects in parallel')
 @click.option('--dry-run', is_flag=True,
-              help='Show what would be processed without running')
+              help='Show what would be processed without running the pipeline')
 @click.pass_context
 def run(ctx, bids_dir, output_dir, participant_label, session_id, steps, 
         n_threads, force, parallel, dry_run):
-    """Run the SubTract pipeline on a BIDS dataset."""
+    """Run the SubTract pipeline on a BIDS dataset.
+    
+    This command processes diffusion MRI data through a complete pipeline
+    optimized for subcortical tractography. The pipeline includes preprocessing,
+    tractography, and connectomics analysis.
+    
+    Example:
+        subtract run /path/to/bids/dataset --participant-label sub-001 --steps tractography,sift2
+    """
     
     logger = ctx.obj['logger']
     

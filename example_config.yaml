@@ -1,75 +1,88 @@
 # SubTract Pipeline Configuration Example
-# This file shows all available configuration options
+# This file shows all available configuration options for the SubTract pipeline
+# Version: 1.0.0-alpha
 
+# Paths configuration
 paths:
-  base_path: /path/to/project
-  data_dir: /path/to/bids/dataset
-  analysis_dir: /path/to/derivatives/subtract
-  result_dir: /path/to/derivatives/subtract/results
-  script_dir: /path/to/code
+  base_path: /path/to/project        # Base directory for the project
+  data_dir: /path/to/bids/dataset    # Directory containing raw BIDS data
+  analysis_dir: /path/to/derivatives/subtract  # Directory for analysis outputs
+  result_dir: /path/to/derivatives/subtract/results  # Directory for final results
+  script_dir: /path/to/code          # Directory containing scripts and templates
 
+# BIDS dataset configuration
 bids:
-  validate_bids: true
-  bids_version: "1.8.0"
-  sessions: null  # null = all sessions, or specify: ["baseline", "followup"]
-  tasks: null     # null = all tasks, or specify: ["rest", "task"]
-  runs: null      # null = all runs, or specify: ["1", "2"]
-  dwi_suffixes: ["dwi"]
-  phase_encoding_directions: ["AP", "PA", "LR", "RL"]
-  required_dwi_files: ["dwi.nii.gz", "dwi.bval", "dwi.bvec"]
-  optional_files: ["dwi.json", "T1w.nii.gz", "T2w.nii.gz"]
+  validate_bids: true                # Enable BIDS validation
+  bids_version: "1.8.0"             # BIDS specification version
+  sessions: null                     # null = all sessions, or specify: ["baseline", "followup"]
+  tasks: null                        # null = all tasks, or specify: ["rest", "task"]
+  runs: null                         # null = all runs, or specify: ["1", "2"]
+  dwi_suffixes: ["dwi"]             # DWI file suffixes to process
+  phase_encoding_directions: ["AP", "PA", "LR", "RL"]  # Expected phase encoding directions
+  required_dwi_files: ["dwi.nii.gz", "dwi.bval", "dwi.bvec"]  # Required DWI files
+  optional_files: ["dwi.json", "T1w.nii.gz", "T2w.nii.gz"]    # Optional files
 
+# Processing parameters
 processing:
-  n_threads: 24
-  force_overwrite: false
-  denoise_method: "dwidenoise"
-  topup_config: "b02b0.cnf"
-  readout_time: null  # Auto-detect from JSON metadata
-  eddy_cuda: true
-  eddy_method: "eddy_cuda10.2"
-  bet_threshold: 0.2
-  registration_type: "SyNQuick"
-  n_tracks: 1000000
-  track_algorithm: "iFOD2"
+  # General processing
+  n_threads: 24                      # Number of CPU threads for parallel processing
+  force_overwrite: false             # Force overwrite existing outputs (use with caution)
+  
+  # Denoising parameters
+  denoise_method: "dwidenoise"       # DWI denoising method (MRtrix3)
+  
+  # TopUp parameters
+  topup_config: "b02b0.cnf"         # TopUp configuration file
+  readout_time: null                 # Total readout time (auto-detect from JSON if None)
+  
+  # Eddy parameters
+  eddy_cuda: true                    # Use CUDA acceleration for Eddy if available
+  eddy_method: "eddy_cuda10.2"       # Eddy method to use
+  bet_threshold: 0.2                 # BET threshold for brain extraction
+  
+  # Registration parameters
+  registration_type: "SyNQuick"      # ANTs registration type
+  
+  # Tractography parameters
+  n_tracks: 1000000                  # Number of tracks to generate per hemisphere
+  track_algorithm: "iFOD2"           # Tracking algorithm (MRtrix3)
   
   # SIFT2 parameters
-  sift2_term_ratio: 0.1
-  sift2_ndi_threshold: 0.1  # NDI threshold for processing mask (original: 0.1)
-  sift2_output_coeffs: true  # Generate SIFT2 coefficients files
-  sift2_output_mu: true      # Generate mu (proportionality coefficient) files
-  sift2_fd_scale_gm: false   # Scale fibre density by GM volume (optional)
+  sift2_ndi_threshold: 0.1           # NDI threshold for SIFT2 processing mask
+  sift2_output_coeffs: true          # Generate SIFT2 coefficients files
+  sift2_output_mu: true              # Generate mu (proportionality coefficient) files
+  sift2_fd_scale_gm: false           # Scale fibre density by GM volume (optional)
 
+# ROI configuration
 rois:
-  roi_names:
-    - "Amyg_L_MNI"
-    - "Amyg_R_MNI"
-    - "BNST_L_MNI"
-    - "BNST_R_MNI"
-    - "Hipp_L_MNI"
-    - "Hipp_R_MNI"
-    - "Insl_L_MNI"
-    - "Insl_R_MNI"
-    - "vmPF_L_MNI"
-    - "vmPF_R_MNI"
-    - "Hypo_L_MNI"
-    - "Hypo_R_MNI"
-  target_rois:
-    - "BNST_L"
-    - "BNST_R"
+  roi_names:                         # List of ROIs in fsaverage space
+    - "L_bnst_fsaverage"            # Left BNST
+    - "R_bnst_fsaverage"            # Right BNST
+    - "L_amygdala_fsaverage"        # Left amygdala
+    - "R_amygdala_fsaverage"        # Right amygdala
+    - "L_hippocampus_fsaverage"     # Left hippocampus
+    - "R_hippocampus_fsaverage"     # Right hippocampus
+    - "L_vmPFC_fsaverage"          # Left ventromedial prefrontal cortex
+    - "R_vmPFC_fsaverage"          # Right ventromedial prefrontal cortex
+    - "L_insula_fsaverage"         # Left insula
+    - "R_insula_fsaverage"         # Right insula
+    - "L_hypothalamus_fsaverage"   # Left hypothalamus
+    - "R_hypothalamus_fsaverage"   # Right hypothalamus
+  
+  gmwm_boundary: true               # Use GM-WM boundary for tractography
 
 # Pipeline steps to run (in order)
 steps_to_run:
-  - "copy_data"
-  - "denoise"
-  - "topup"
-  - "eddy"
-  - "registration"
-  - "mdt"
-  - "mrtrix_prep"
-  - "tractography"
-  - "sift2"
-  - "roi_registration"
-  - "connectome"
+  - "copy_data"                      # Copy and organize BIDS data
+  - "denoise"                        # DWI denoising using MP-PCA
+  - "topup"                          # Field map estimation and correction
+  - "eddy"                           # Eddy current and motion correction
+  - "mdt"                            # Microstructure modeling (NODDI, DTI)
+  - "mrtrix_prep"                    # MRtrix3 preprocessing (response, FOD)
+  - "tractography"                   # Generate 1M tracks per hemisphere
+  - "sift2"                          # Track filtering and optimization
+  - "roi_registration"               # ROI registration to subject space
+  - "connectome"                     # Generate connectivity matrices
 
 # Subject filtering (regex pattern)
-subject_filter: null  # null = all subjects, or specify pattern like "^(001|002)$" 
+subject_filter: null                 # null = all subjects, or specify pattern like "^(001|002)$" 
