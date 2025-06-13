@@ -65,7 +65,7 @@ The pipeline performs probabilistic tractography between these regions and gener
 The pipeline uses multiple conda environments for tool isolation:
 
 ```bash
-# Base environment with MRtrix3 and FSL
+# Subtract environment with MRtrix3 and FSL
 conda create -n subtract python=3.9
 conda activate subtract  
 conda install -c mrtrix3 mrtrix3=3.0.4

@@ -287,16 +287,63 @@ class MRtrixPreprocessor(MRtrix3Processor):
             cmd = ["mrconvert", f"{subject_id}_brain_mask.mif", "5tt_nocoreg_fs.mif"]
             self.run_command(cmd, cwd=mrtrix_dir)
         else:
-            # Generate 5TT from FreeSurfer
-            # Use MRtrix3's built-in FreeSurfer color lookup table instead of custom one
-            cmd = [
-                "5ttgen", "freesurfer",
-                str(aseg_file),
-                "5tt_nocoreg_fs.mif",
-                "-force"
-            ]
+            # Fix the FreeSurfer lookup table issue by creating a corrected version
+            self.logger.info("Creating corrected FreeSurfer lookup table")
+            corrected_lut = mrtrix_dir / "FreeSurferColorLUT_fixed.txt"
             
-            self.run_command(cmd, cwd=mrtrix_dir)
+            # Read the original FreeSurfer LUT and fix inconsistent lines
+            original_lut = Path("/usr/local/freesurfer/8.0.0/FreeSurferColorLUT.txt")
+            if not original_lut.exists():
+                # Try alternative FreeSurfer paths
+                for fs_path in ["/usr/local/freesurfer/FreeSurferColorLUT.txt", 
+                               "/opt/freesurfer/FreeSurferColorLUT.txt"]:
+                    if Path(fs_path).exists():
+                        original_lut = Path(fs_path)
+                        break
+            
+            if original_lut.exists():
+                with open(original_lut, 'r') as infile, open(corrected_lut, 'w') as outfile:
+                    for line_num, line in enumerate(infile, 1):
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            outfile.write(line + '\n')
+                            continue
+                        
+                        # Split the line and check column count
+                        parts = line.split()
+                        if len(parts) > 6:
+                            # Fix lines with too many columns by keeping only first 6
+                            fixed_line = ' '.join(parts[:6])
+                            outfile.write(fixed_line + '\n')
+                            if line_num == 511:  # Log the specific problematic line
+                                self.logger.debug(f"Fixed line {line_num}: {line} -> {fixed_line}")
+                        else:
+                            outfile.write(line + '\n')
+                
+                # Generate 5TT from FreeSurfer using the corrected lookup table
+                cmd = [
+                    "5ttgen", "freesurfer",
+                    str(aseg_file.resolve()),
+                    str((mrtrix_dir / "5tt_nocoreg_fs.mif").resolve()),
+                    "-lut", str(corrected_lut.resolve()),
+                    "-force"
+                ]
+                
+                self.run_command(cmd, cwd=mrtrix_dir)
+                
+                # Clean up the temporary corrected lookup table
+                corrected_lut.unlink()
+            else:
+                self.logger.warning("Could not find FreeSurfer lookup table, using MRtrix3 default")
+                # Fallback to default MRtrix3 method
+                cmd = [
+                    "5ttgen", "freesurfer",
+                    str(aseg_file.resolve()),
+                    str((mrtrix_dir / "5tt_nocoreg_fs.mif").resolve()),
+                    "-force"
+                ]
+                
+                self.run_command(cmd, cwd=mrtrix_dir)
         
         return [mrtrix_dir / "5tt_nocoreg_fs.mif"]
     

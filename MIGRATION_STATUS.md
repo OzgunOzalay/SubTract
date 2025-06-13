@@ -112,7 +112,7 @@
 - [x] **Step 010: ROI Registration** (`src/subtract/registration/roi_registration.py`) **🆕 COMPLETE**
   - **Complete implementation of fs2diff ROI transformation**
   - Automated registration of 12 BNST network ROIs from fsaverage to subject DWI space
-  - Multi-conda environment support (FreeSurfer → subtract, ANTs → ants, MRtrix3 → subtract)
+  - Multi-conda environment support (FreeSurfer → subtract, ANTs → ants, MRtrix3 → subtract) - no separate mrtrix3 environment
   - **Bilateral ROI processing**: Creates left/right hemisphere parcellations with numbered regions (1-5)
   - **ROI list**: Amyg_L/R, BNST_L/R, Hipp_L/R, Insl_L/R, vmPF_L/R, Hypo_L/R
   - **Full BIDS format compliance** throughout the registration process
@@ -227,7 +227,7 @@ derivatives/subtract/sub-{subject}/dwi/
 - **🆕 Multi-Conda Environment Integration**: Complete tool isolation with environment-specific execution
   - FreeSurfer tools → `subtract` environment
   - ANTs tools → `ants` environment
-  - MRtrix3 tools → `subtract` environment
+  - MRtrix3 tools → `subtract` environment (no separate mrtrix3 environment)
   - MDT tools → `mdt` environment (with fallback to mock outputs)
   - FSL tools → `subtract` environment
 - **Optimized Performance**: 1M tracks per hemisphere for efficient processing

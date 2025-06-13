@@ -311,9 +311,9 @@ class ANTsProcessor(BaseProcessor):
             # Check antsRegistration in the appropriate conda environment
             result = self.run_command_in_env(
                 command=["which", "antsRegistration"],
-                env_name="subtract",
+                env_name="ants",
                 capture_output=True
             )
             self.logger.debug(f"ANTs found at: {result.stdout.strip()}")
         except subprocess.CalledProcessError:
-            self.logger.warning("ANTs not found in 'subtract' environment, but will try to use conda run for commands") 
+            self.logger.warning("ANTs not found in 'ants' environment, but will try to use conda run for commands") 

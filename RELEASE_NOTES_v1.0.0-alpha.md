@@ -25,7 +25,7 @@ All 11 processing steps have been successfully migrated and tested:
 
 #### **Step 010: ROI Registration**
 - **Complete fs2diff Implementation**: Automated transformation of 12 BNST network ROIs from fsaverage to subject DWI space
-- **Multi-Environment Support**: Seamless integration across FreeSurfer→subtract, ANTs→ants, MRtrix3→subtract environments
+- **Multi-Environment Support**: Seamless integration across FreeSurfer→subtract, ANTs→ants, MRtrix3→subtract environments (no separate mrtrix3 environment)
 - **Bilateral Processing**: Creates left/right hemisphere parcellations with numbered regions (1-5)
 - **Comprehensive ROI Coverage**: Amyg_L/R, BNST_L/R, Hipp_L/R, Insl_L/R, vmPF_L/R, Hypo_L/R
 - **Structured Output**: 24 individual ROI files + 2 parcellation files per subject
@@ -52,7 +52,7 @@ All 11 processing steps have been successfully migrated and tested:
 - **Complete Tool Isolation**: Tools run in appropriate environments automatically
   - FreeSurfer tools → `subtract` environment
   - ANTs tools → `ants` environment  
-  - MRtrix3 tools → `subtract` environment
+  - MRtrix3 tools → `subtract` environment (no separate mrtrix3 environment)
   - MDT tools → `mdt` environment (with fallback mocks)
 - **Parameter Fixes**: Removed invalid `-term_ratio` parameter from SIFT2 (Step 009)
 - **Import System**: Fixed relative/absolute import issues for reliable module loading

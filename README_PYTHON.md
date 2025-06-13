@@ -18,7 +18,7 @@ SubTract is a comprehensive white matter tractography pipeline specifically desi
 - **Comprehensive Logging**: Detailed logging and error reporting
 - **🆕 Conda Environment Integration**: Automatic tool isolation for conflicting dependencies
   - ANTs tools run in dedicated `ANTs` environment
-  - MRtrix3 tools run in dedicated `mrtrix3` environment
+  - MRtrix3 tools run in `subtract` environment
   - MDT tools run in dedicated `mdt` environment (with fallback to mock outputs)
   - FSL tools run in `base` environment
 
@@ -29,7 +29,7 @@ SubTract is a comprehensive white matter tractography pipeline specifically desi
 - Python 3.8 or higher
 - **Conda environments with tools**:
   - `base` environment: FSL (FMRIB Software Library)
-  - `mrtrix3` environment: MRtrix3
+  - `subtract` environment: MRtrix3, FSL, Python tools
   - `ANTs` environment: ANTs (Advanced Normalization Tools) 
   - `mdt` environment: MDT (optional, will use mock outputs if unavailable)
 - FreeSurfer (optional, for additional anatomical processing)
@@ -60,8 +60,7 @@ SubTract requires specific conda environments for different tools. Set up as fol
 # Create base environment with FSL
 conda create -n base fsl
 
-# Create MRtrix3 environment
-conda create -n mrtrix3 mrtrix3
+# MRtrix3 tools are already included in the subtract environment
 
 # Create ANTs environment
 conda create -n ANTs ants
@@ -196,7 +195,7 @@ The SubTract pipeline consists of the following steps:
    - Format conversion (.nii → .nii.gz)
 
 2. **denoise**: DWI denoising using MRtrix3 dwidenoise
-   - MP-PCA denoising algorithm (via `mrtrix3` conda environment)
+   - MP-PCA denoising algorithm (via `subtract` conda environment)
    - Multi-threaded processing
    - Smart resume capability
 
@@ -217,7 +216,7 @@ The SubTract pipeline consists of the following steps:
    - Mock output generation when MDT unavailable
 
 6. **mrtrix_prep**: MRtrix3 preprocessing
-   - Response function estimation using dhollander algorithm (via `mrtrix3` environment)
+   - Response function estimation using dhollander algorithm (via `subtract` environment)
    - FOD computation with multi-shell multi-tissue CSD
    - 5-tissue-type image generation from FreeSurfer
    - Coregistration with ANTs (via `ANTs` environment)
