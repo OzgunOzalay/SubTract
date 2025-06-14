@@ -97,24 +97,13 @@ class TrackGenerator(MRtrix3Processor):
             outputs = []
             metrics = {}
             
-            # Step 1: Transform BNST ROIs from fsaverage to diffusion space
-            self.logger.info("Step 1: Transforming BNST ROIs from fsaverage to diffusion space")
-            roi_files = self._transform_bnst_rois(subject_id, mrtrix_dir)
-            outputs.extend(roi_files)
-            
-            # Step 2: Convert ROIs to MIF format
-            self.logger.info("Step 2: Converting ROIs to MIF format")
-            mif_roi_files = self._convert_rois_to_mif(subject_id, mrtrix_dir, roi_files)
-            outputs.extend(mif_roi_files)
-            
-            # Step 3: Generate tracks for left and right BNST
-            self.logger.info("Step 3: Generating probabilistic tracks")
-            track_files = self._generate_tracks(subject_id, mrtrix_dir, mif_roi_files)
+            # Generate tracks for left and right hemispheres
+            self.logger.info("Generating probabilistic tracks")
+            track_files = self._generate_tracks(subject_id, mrtrix_dir)
             outputs.extend(track_files)
             
-            metrics["roi_files_transformed"] = len(roi_files)
             metrics["track_files_generated"] = len(track_files)
-            metrics["total_tracks_per_roi"] = self.config.processing.n_tracks
+            metrics["total_tracks"] = self.config.processing.n_tracks
             
             execution_time = time.time() - start_time
             
@@ -144,19 +133,11 @@ class TrackGenerator(MRtrix3Processor):
         required_files = [
             mrtrix_dir / "wmfod_norm.mif",  # From step 007
             mrtrix_dir / "5tt_coreg_fs_ants.mif",  # From step 007
-            mrtrix_dir / "fs2diff_0GenericAffine.mat",  # From step 007 ANTs registration
-            mrtrix_dir / "mean_b0_brain.nii.gz",  # Reference for ANTs transformation
-        ]
-        
-        # Check for BNST ROI files in the project ROIs directory
-        roi_dir = self.config.paths.base_path / "ROIs"
-        bnst_roi_files = [
-            roi_dir / "L_bnst_fsaverage.nii.gz",
-            roi_dir / "R_bnst_fsaverage.nii.gz"
+            mrtrix_dir / "gmwmSeed_coreg_fs_ants.mif",  # GM-WM interface seed file
         ]
         
         missing_files = []
-        for f in required_files + bnst_roi_files:
+        for f in required_files:
             if not f.exists():
                 missing_files.append(str(f))
         
@@ -166,95 +147,41 @@ class TrackGenerator(MRtrix3Processor):
         
         return True
     
-    def _transform_bnst_rois(self, subject_id: str, mrtrix_dir: Path) -> List[Path]:
-        """Transform BNST ROIs from fsaverage space to diffusion space."""
-        roi_dir = self.config.paths.base_path / "ROIs"
-        transformed_rois = []
-        
-        # ROI files to transform
-        roi_files = [
-            ("L_bnst_fsaverage.nii.gz", "L_bnst_DWI.nii.gz"),
-            ("R_bnst_fsaverage.nii.gz", "R_bnst_DWI.nii.gz")
-        ]
-        
-        for source_name, target_name in roi_files:
-            source_file = roi_dir / source_name
-            target_file = mrtrix_dir / target_name
-            
-            self.logger.info(f"Transforming {source_name} to diffusion space")
-            
-            # Use antsApplyTransforms to apply fsaverage -> diffusion transformation
-            # Use absolute paths to avoid any path resolution issues
-            reference_file = mrtrix_dir / "mean_b0_brain.nii.gz"
-            transform_file = mrtrix_dir / "fs2diff_0GenericAffine.mat"
-            
-            cmd = [
-                "antsApplyTransforms",
-                "-d", "3",
-                "-i", str(source_file.resolve()),
-                "-r", str(reference_file.resolve()),
-                "-t", str(transform_file.resolve()),
-                "--interpolation", "NearestNeighbor",  # Nearest neighbor for binary masks
-                "-o", str(target_file.resolve())
-            ]
-            
-            self.run_command(cmd, cwd=mrtrix_dir)
-            transformed_rois.append(target_file)
-        
-        return transformed_rois
-    
-    def _convert_rois_to_mif(self, subject_id: str, mrtrix_dir: Path, roi_files: List[Path]) -> List[Path]:
-        """Convert transformed ROI files to MIF format."""
-        mif_files = []
-        
-        for roi_file in roi_files:
-            # Create MIF file with proper naming (replace .nii.gz with .mif)
-            mif_file = roi_file.with_suffix('').with_suffix('').with_suffix('.mif')
-            
-            self.logger.info(f"Converting {roi_file.name} to MIF format")
-            
-            cmd = [
-                "mrconvert", str(roi_file.resolve()), str(mif_file.resolve()), "-force"
-            ]
-            
-            self.run_command(cmd, cwd=mrtrix_dir)
-            mif_files.append(mif_file)
-        
-        return mif_files
-    
-    def _generate_tracks(self, subject_id: str, mrtrix_dir: Path, roi_files: List[Path]) -> List[Path]:
-        """Generate probabilistic tracks from BNST ROIs."""
+    def _generate_tracks(self, subject_id: str, mrtrix_dir: Path) -> List[Path]:
+        """Generate probabilistic tracks using GM-WM interface seeding."""
         track_files = []
         
-        # Map ROI files to track files
-        roi_to_track = {
-            "L_bnst_DWI.mif": "tracks_1M_BNST_L.tck",
-            "R_bnst_DWI.mif": "tracks_1M_BNST_R.tck"
-        }
+        # Convert n_tracks to a string with appropriate suffix (M for millions, K for thousands)
+        n_tracks = self.config.processing.n_tracks
+        if n_tracks >= 1000000:
+            track_suffix = f"{n_tracks // 1000000}M"
+        else:
+            track_suffix = f"{n_tracks // 1000}K"
         
-        for roi_file in roi_files:
-            roi_name = roi_file.name
+        # Track files for left and right hemispheres
+        track_configs = [
+            {"hemisphere": "Left", "suffix": "L"},
+            {"hemisphere": "Right", "suffix": "R"}
+        ]
+        
+        for config in track_configs:
+            track_file = mrtrix_dir / f"tracks_{track_suffix}_BNST_{config['suffix']}.tck"
             
-            if roi_name not in roi_to_track:
-                self.logger.warning(f"Unknown ROI file: {roi_name}, skipping")
-                continue
-            
-            track_file = mrtrix_dir / roi_to_track[roi_name]
-            hemisphere = "Left" if "L_bnst" in roi_name else "Right"
-            
-            self.logger.info(f"Generating tracks from BNST {hemisphere} for {subject_id}")
+            self.logger.info(f"Generating tracks for {config['hemisphere']} hemisphere")
             
             # Build tckgen command with absolute paths
             act_file = mrtrix_dir / "5tt_coreg_fs_ants.mif"
             fod_file = mrtrix_dir / "wmfod_norm.mif"
+            gmwm_seed_file = mrtrix_dir / "gmwmSeed_coreg_fs_ants.mif"
             
             cmd = [
                 "tckgen",
                 "-act", str(act_file.resolve()),  # Anatomically constrained tractography
                 "-backtrack",  # Allow backtracking
-                "-seed_image", str(roi_file.resolve()),  # Seed from BNST ROI
+                "-seed_gmwmi", str(gmwm_seed_file.resolve()),  # Seed from GM-WM interface
                 "-nthreads", str(self.config.processing.n_threads),
-                "-select", "1000000",  # Number of tracks to generate (1M)
+                "-select", str(self.config.processing.n_tracks),  # Number of tracks from config
+                "-cutoff", str(self.config.processing.track_cutoff),  # FOD amplitude cutoff
                 "-force",
                 str(fod_file.resolve()),  # Input FOD
                 str(track_file.resolve())  # Output track file
@@ -267,9 +194,16 @@ class TrackGenerator(MRtrix3Processor):
     
     def _get_expected_track_files(self, mrtrix_dir: Path) -> List[Path]:
         """Get list of expected track files."""
+        # Convert n_tracks to a string with appropriate suffix (M for millions, K for thousands)
+        n_tracks = self.config.processing.n_tracks
+        if n_tracks >= 1000000:
+            track_suffix = f"{n_tracks // 1000000}M"
+        else:
+            track_suffix = f"{n_tracks // 1000}K"
+            
         return [
-            mrtrix_dir / "tracks_1M_BNST_L.tck",
-            mrtrix_dir / "tracks_1M_BNST_R.tck"
+            mrtrix_dir / f"tracks_{track_suffix}_BNST_L.tck",
+            mrtrix_dir / f"tracks_{track_suffix}_BNST_R.tck"
         ]
     
     def validate_inputs(self, subject_id: str, session_id: Optional[str] = None) -> bool:
@@ -294,12 +228,6 @@ class TrackGenerator(MRtrix3Processor):
         
         # All expected outputs
         return [
-            # Transformed ROIs
-            mrtrix_dir / "L_bnst_DWI.nii.gz",
-            mrtrix_dir / "R_bnst_DWI.nii.gz",
-            # MIF ROIs
-            mrtrix_dir / "L_bnst_DWI.mif",
-            mrtrix_dir / "R_bnst_DWI.mif",
             # Track files
             mrtrix_dir / "tracks_1M_BNST_L.tck",
             mrtrix_dir / "tracks_1M_BNST_R.tck"

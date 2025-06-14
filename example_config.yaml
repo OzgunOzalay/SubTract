@@ -4,11 +4,11 @@
 
 # Paths configuration
 paths:
-  base_path: /path/to/project        # Base directory for the project
-  data_dir: /path/to/bids/dataset    # Directory containing raw BIDS data
-  analysis_dir: /path/to/derivatives/subtract  # Directory for analysis outputs
-  result_dir: /path/to/derivatives/subtract/results  # Directory for final results
-  script_dir: /path/to/code          # Directory containing scripts and templates
+  base_path: /home/ozgun/Projects/SubTract        # Base directory for the project
+  data_dir: /home/ozgun/Projects/SubTract/Data    # Directory containing raw BIDS data
+  analysis_dir: /home/ozgun/Projects/SubTract/derivatives/subtract  # Directory for analysis outputs
+  result_dir: /home/ozgun/Projects/SubTract/derivatives/subtract/results  # Directory for final results
+  script_dir: /home/ozgun/Projects/SubTract/src          # Directory containing scripts and templates
 
 # BIDS dataset configuration
 bids:
@@ -25,7 +25,7 @@ bids:
 # Processing parameters
 processing:
   # General processing
-  n_threads: 24                      # Number of CPU threads for parallel processing
+  n_threads: 10                      # Number of CPU threads for parallel processing
   force_overwrite: false             # Force overwrite existing outputs (use with caution)
   
   # Denoising parameters
@@ -44,8 +44,9 @@ processing:
   registration_type: "SyNQuick"      # ANTs registration type
   
   # Tractography parameters
-  n_tracks: 1000000                  # Number of tracks to generate per hemisphere
+  n_tracks: 5000000                  # Number of tracks to generate per hemisphere
   track_algorithm: "iFOD2"           # Tracking algorithm (MRtrix3)
+  track_cutoff: 0.045                  # FOD amplitude cutoff for terminating tracks (default: 0.1) Multiplied by 0.5 when using ACT
   
   # SIFT2 parameters
   sift2_ndi_threshold: 0.1           # NDI threshold for SIFT2 processing mask
@@ -73,16 +74,16 @@ rois:
 
 # Pipeline steps to run (in order)
 steps_to_run:
-  - "copy_data"                      # Copy and organize BIDS data
-  - "denoise"                        # DWI denoising using MP-PCA
-  - "topup"                          # Field map estimation and correction
-  - "eddy"                           # Eddy current and motion correction
-  - "mdt"                            # Microstructure modeling (NODDI, DTI)
-  - "mrtrix_prep"                    # MRtrix3 preprocessing (response, FOD)
-  - "tractography"                   # Generate 1M tracks per hemisphere
-  - "sift2"                          # Track filtering and optimization
-  - "roi_registration"               # ROI registration to subject space
-  - "connectome"                     # Generate connectivity matrices
+  # - "copy_data"                      # Copy and organize BIDS data
+  # - "denoise"                        # DWI denoising using MP-PCA
+  # - "topup"                          # Field map estimation and correction
+  # - "eddy"                           # Eddy current and motion correction
+  # - "mdt"                            # Microstructure modeling (NODDI, DTI)
+  # - "mrtrix_prep"                    # MRtrix3 preprocessing (response, FOD)
+  - "tractography"                   # Generate tracks per hemisphere
+  # - "sift2"                          # Track filtering and optimization
+  # - "roi_registration"               # ROI registration to subject space
+  # - "connectome"                     # Generate connectivity matrices
 
 # Subject filtering (regex pattern)
 subject_filter: null                 # null = all subjects, or specify pattern like "^(001|002)$" 

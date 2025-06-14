@@ -86,6 +86,7 @@ class ProcessingConfig(BaseModel):
     # Tractography parameters
     n_tracks: int = Field(default=1000000, description="Number of tracks to generate")
     track_algorithm: str = Field(default="iFOD2", description="Tracking algorithm")
+    track_cutoff: float = Field(default=0.1, description="FOD amplitude cutoff for terminating tracks (default: 0.1)")
     
     # SIFT2 parameters
     sift2_term_ratio: float = Field(default=0.1, description="SIFT2 minimum cost function decrease (as fraction of initial value) for algorithm continuation")
