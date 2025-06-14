@@ -246,7 +246,7 @@ class MDTProcessor(BaseProcessor):
             result = self.run_command(cmd, cwd=mdt_dir)
             
             # Fit NODDI model
-            cmd = ['mdt-model-fit', 'NODDIDA', f'{subject_id}.nii.gz', 
+            cmd = ['mdt-model-fit', 'AxCaliber', f'{subject_id}.nii.gz', 
                   f'{subject_id}.prtcl', f'{subject_id}_brain_mask.nii.gz']
             result = self.run_command(cmd, cwd=mdt_dir)
             
