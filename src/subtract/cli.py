@@ -36,6 +36,9 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
         handlers=[RichHandler(console=console, rich_tracebacks=True)]
     )
     
+    # Force console to flush immediately
+    console.force_terminal = True
+    
     return logging.getLogger("subtract")
 
 

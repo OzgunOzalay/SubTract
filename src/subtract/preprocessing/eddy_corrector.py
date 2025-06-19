@@ -330,11 +330,11 @@ class EddyCorrector(BaseProcessor):
         # Determine which eddy command to use
         if self.config.processing.eddy_cuda:
             eddy_cmd = self.config.processing.eddy_method
-            # CUDA version can only use 1 thread
-            n_threads = 1
+            # CUDA version doesn't use --nthr parameter
+            use_nthr = False
         else:
             eddy_cmd = "eddy_openmp"
-            n_threads = self.config.processing.n_threads
+            use_nthr = True
         
         # Build eddy command
         cmd = [
@@ -348,23 +348,27 @@ class EddyCorrector(BaseProcessor):
             f"--topup={subject_id}_dir-AP-PA_dwi_Topup",
             "--flm=quadratic",
             f"--out={subject_id}_eddy_unwarped",
-            "--data_is_shelled",
-            f"--nthr={n_threads}"
+            "--data_is_shelled"
         ]
+        
+        # Only add --nthr for non-CUDA versions
+        if use_nthr:
+            cmd.append(f"--nthr={self.config.processing.n_threads}")
         
         try:
             self.logger.debug(f"Running: {' '.join(cmd)}")
             
-            # Run eddy from the eddy directory
+            # Run eddy from the eddy directory with unbuffered output
             result = subprocess.run(
                 cmd,
                 cwd=eddy_dir,
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                bufsize=0  # Unbuffered output
             )
             
-            # Log eddy output
+            # Log eddy output immediately
             if result.stdout:
                 self.logger.debug(f"Eddy stdout: {result.stdout}")
             if result.stderr:

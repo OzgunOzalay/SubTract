@@ -13,6 +13,7 @@ from ..config.settings import SubtractConfig
 from ..core.base_processor import ProcessingResult
 from ..preprocessing.data_organizer import DataOrganizer
 from ..preprocessing.denoiser import DWIDenoiser
+from ..preprocessing.gibbs_remover import GibbsRemover
 from ..preprocessing.distortion_corrector import DistortionCorrector
 from ..preprocessing.eddy_corrector import EddyCorrector
 from ..preprocessing.mdt_processor import MDTProcessor
@@ -62,6 +63,9 @@ class PipelineRunner:
         
         if "denoise" in self.config.steps_to_run:
             processors["denoise"] = DWIDenoiser(self.config, self.logger)
+        
+        if "degibbs" in self.config.steps_to_run:
+            processors["degibbs"] = GibbsRemover(self.config, self.logger)
         
         if "topup" in self.config.steps_to_run:
             processors["topup"] = DistortionCorrector(self.config, self.logger)

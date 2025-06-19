@@ -149,4 +149,32 @@ For questions, bug reports, or feature requests, please open an issue on GitHub.
 
 ---
 
-**🎉 SubTract v1.0.0-alpha represents a complete transformation of the pipeline from Bash to modern Python, providing researchers with a robust, scalable, and maintainable solution for white matter tractography analysis.** 
+**🎉 SubTract v1.0.0-alpha represents a complete transformation of the pipeline from Bash to modern Python, providing researchers with a robust, scalable, and maintainable solution for white matter tractography analysis.**
+
+## ✨ New Features
+
+### 🔬 Gibbs Ringing Removal (New Step 002b)
+- **Added**: MRtrix3 `mrdegibbs` integration for Gibbs artifact removal
+- **Implementation**: Kellner et al. method using local subvoxel-shifts
+- **Pipeline Position**: Runs after DWI denoising and before distortion correction
+- **File Naming**: Input: `*_denoised.nii.gz` → Output: `*_denoised_degibbs.nii.gz`
+- **Configuration**: Added `degibbs` step to all configuration files
+- **Docker Support**: Updated Docker image with new step integration
+
+### 🧠 Complete ROI Registration System
+- **Automated Transformation**: 12 bilateral BNST network ROIs from fsaverage to subject DWI space
+- **Multi-ROI Support**: Amygdala, BNST, Hippocampus, Hypothalamus, vmPFC
+- **Quality Control**: Automated validation of ROI transformations
+- **BIDS Compliance**: Standardized ROI naming and organization
+
+### 📊 Connectivity Fingerprint Generation
+- **Microstructure-Weighted**: Integration of NODDI metrics with tractography
+- **Bilateral Analysis**: Separate connectivity matrices for left and right BNST
+- **Composite Metrics**: Optimized combination of NODDI and Ball-Stick parameters
+- **CSV Export**: Standardized connectivity fingerprint format
+
+### 🔧 Enhanced Pipeline Architecture
+- **Type Safety**: Full Pydantic validation throughout
+- **Error Handling**: Robust resume capability with detailed logging
+- **Multi-Environment**: Automatic conda environment management
+- **GPU Support**: CUDA acceleration for FSL Eddy correction 

@@ -1,0 +1,69 @@
+# SubTract Pipeline Test Configuration
+# Version: 1.0.0-alpha
+
+# Paths configuration
+paths:
+  base_path: /opt/subtract
+  data_dir: /opt/subtract/Data
+  analysis_dir: /opt/subtract/derivatives/subtract
+  result_dir: /opt/subtract/derivatives/subtract/results
+  script_dir: /opt/subtract/src
+
+# BIDS dataset configuration
+bids:
+  validate_bids: true
+  bids_version: "1.8.0"
+  sessions: null
+  tasks: null
+  runs: null
+  dwi_suffixes: ["dwi"]
+  phase_encoding_directions: ["AP", "PA", "LR", "RL"]
+  required_dwi_files: ["dwi.nii.gz", "dwi.bval", "dwi.bvec"]
+  optional_files: ["dwi.json", "T1w.nii.gz", "T2w.nii.gz"]
+
+# Processing parameters
+processing:
+  n_threads: 10
+  force_overwrite: true
+  denoise_method: "dwidenoise"
+  topup_config: "b02b0.cnf"
+  readout_time: null
+  eddy_cuda: true
+  eddy_method: "eddy_cuda10.2"
+  bet_threshold: 0.2
+  registration_type: "SyNQuick"
+  n_tracks: 5000000
+  track_algorithm: "iFOD2"
+  track_cutoff: 0.045
+  sift2_ndi_threshold: 0.1
+  sift2_output_coeffs: true
+  sift2_output_mu: true
+  sift2_fd_scale_gm: false
+
+# ROI configuration
+rois:
+  roi_names:
+    - "L_bnst_fsaverage"
+    - "R_bnst_fsaverage"
+    - "L_amygdala_fsaverage"
+    - "R_amygdala_fsaverage"
+    - "L_hippocampus_fsaverage"
+    - "R_hippocampus_fsaverage"
+    - "L_vmPFC_fsaverage"
+    - "R_vmPFC_fsaverage"
+    - "L_insula_fsaverage"
+    - "R_insula_fsaverage"
+    - "L_hypothalamus_fsaverage"
+    - "R_hypothalamus_fsaverage"
+  gmwm_boundary: true
+
+# Pipeline steps to run
+steps_to_run:
+   - "copy_data"                      # Copy and organize BIDS data
+   - "denoise"                        # DWI denoising using MP-PCA
+   - "degibbs"                        # Remove Gibbs ringing artifacts
+   - "topup"                          # Field map estimation and correction
+   - "eddy"                           # Eddy current and motion correction
+
+# Subject filtering
+subject_filter: null 

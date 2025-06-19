@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 import logging
+import os
 
 from ..core.base_processor import BaseProcessor, ProcessingResult
 from ..config.settings import SubtractConfig
@@ -341,11 +342,14 @@ class DistortionCorrector(BaseProcessor):
         """
         topup_output_base = topup_dir / f"{subject_id}_dir-AP-PA_dwi_Topup"
         
+        # Find the FSL config file
+        fsl_config_path = self._find_fsl_config_file()
+        
         cmd = [
             "topup",
             f"--imain={merged_b0.resolve()}",
             f"--datain={acq_params.resolve()}",
-            f"--config={self.config.processing.topup_config}",
+            f"--config={fsl_config_path}",
             f"--out={topup_output_base.resolve()}",
             f"--nthr={self.config.processing.n_threads}"
         ]
@@ -370,6 +374,41 @@ class DistortionCorrector(BaseProcessor):
             error_msg = f"TopUp failed: {e.stderr}"
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
+    
+    def _find_fsl_config_file(self) -> str:
+        """
+        Find the FSL b02b0.cnf configuration file.
+        
+        Returns:
+            Full path to the b02b0.cnf file
+        """
+        config_filename = self.config.processing.topup_config
+        
+        # Check if it's already a full path
+        if Path(config_filename).is_absolute():
+            return config_filename
+        
+        # Look for the file in common FSL locations
+        possible_paths = [
+            Path("/opt/fsl-6.0.7.1/pkgs/fsl-topup-2203.2-h2bc3f7f_1/etc/flirtsch/b02b0.cnf"),
+            Path("/usr/local/fsl/etc/flirtsch/b02b0.cnf"),
+            Path("/opt/fsl/etc/flirtsch/b02b0.cnf"),
+            Path("/usr/share/fsl/etc/flirtsch/b02b0.cnf"),
+        ]
+        
+        # Also check if FSLDIR environment variable is set
+        fsl_dir = os.environ.get('FSLDIR')
+        if fsl_dir:
+            possible_paths.insert(0, Path(fsl_dir) / "etc" / "flirtsch" / config_filename)
+        
+        for path in possible_paths:
+            if path.exists():
+                self.logger.debug(f"Found FSL config file: {path}")
+                return str(path)
+        
+        # If not found, return the original filename and let TopUp handle the error
+        self.logger.warning(f"FSL config file not found in common locations, using: {config_filename}")
+        return config_filename
     
     def _apply_topup(self, ap_dwi: Path, acq_params: Path, topup_output: Path, 
                      topup_dir: Path, subject_id: str) -> Path:

@@ -5,9 +5,17 @@ All notable changes to this project will be documented in this file.
 ## [1.0.0-alpha] - 2025-01-27 - Complete Pipeline Migration
 
 ### 🎉 **MAJOR MILESTONE: Complete Bash-to-Python Migration**
-**All 11 processing steps successfully migrated!** The SubTract pipeline is now fully functional in Python with comprehensive BIDS support, multi-conda environment integration, and end-to-end connectivity analysis.
+**All 12 processing steps successfully migrated!** The SubTract pipeline is now fully functional in Python with comprehensive BIDS support, multi-conda environment integration, and end-to-end connectivity analysis.
 
 ### ✅ **New Steps Completed**
+- **Step 002b: Gibbs Ringing Removal** (`src/subtract/preprocessing/gibbs_remover.py`) - **NEW**
+  - MRtrix3 `mrdegibbs` integration for Gibbs artifact removal
+  - Kellner et al. method using local subvoxel-shifts
+  - Pipeline position: After DWI denoising, before distortion correction
+  - File naming: Input: `*_denoised.nii.gz` → Output: `*_denoised_degibbs.nii.gz`
+  - Multi-threaded processing with smart resume capability
+  - Added to all configuration files and Docker integration
+
 - **Step 010: ROI Registration** (`src/subtract/registration/roi_registration.py`)
   - Complete fs2diff ROI transformation implementation
   - Automated registration of 12 BNST network ROIs from fsaverage to subject DWI space
@@ -250,128 +258,3 @@ analysis_dir/{subject}/dwi/mrtrix3/
   - Complete pipeline steps 001-008 executed successfully
   - Duration: ~33.5 minutes for full preprocessing + tractography
   - Output: `tracks_1M_BNST_L.tck` and `tracks_1M_BNST_R.tck`
-  - 100% success rate with all file transformations
-
-### 🔧 Configuration & Cleanup
-- **Removed Quality Control**: QC references removed from configuration and codebase
-  - Updated `example_config.yaml` to remove `quality_control` section
-  - Removed `QualityControlConfig` class from settings
-  - No functional impact as QC was not implemented
-- **Track Count Optimization**: Updated default from 5M to 1M tracks
-  - Configuration default updated in `settings.py`
-  - Documentation updated across all files
-  - Maintains quality while improving processing speed
-
-### 📚 Documentation Updates
-- **README.md**: Complete project overview with scientific background
-- **MIGRATION_STATUS.md**: Updated to reflect Step 008 completion
-- **migration_plan.md**: Updated progress tracking (73% complete)
-- **README_PYTHON.md**: Updated track count references
-
-### 🏗️ Infrastructure Improvements
-- **Conda Environment Integration**: Robust tool isolation
-  - `subtract` environment: MRtrix3, FSL, Python tools (main environment)
-  - `ants` environment: ANTs registration tools
-  - `mdt` environment: MDT tools (with fallback mocks)
-- **Pipeline Runner**: Enhanced error handling and progress tracking
-
-### 🎯 Current Status
-- **Complete Pipeline**: Steps 001-008 (Preprocessing through Tractography)
-- **Next Phase**: Steps 009-011 (SIFT2, ROI Registration, Connectomics)
-- **Ready for Production**: Current pipeline suitable for preprocessing and tractography
-
-## [0.7.0] - 2024-12-XX - MRtrix3 Preprocessing Complete
-
-### ✅ Features Added
-- **Step 007 MRtrix3 Preprocessing**: Complete FOD estimation pipeline
-  - Response function estimation with dhollander algorithm
-  - Multi-shell multi-tissue CSD for FOD computation
-  - 5-tissue-type segmentation from FreeSurfer
-  - ANTs coregistration with conda environment support
-  - GM/WM interface creation for ACT
-
-### 🧪 Testing
-- **Multi-subject Testing**: ALC2156, ALC2161
-- **Success Rate**: 100% through step 007
-- **Execution Time**: 27.1 seconds for preprocessing
-
-### 🔧 Infrastructure
-- **Conda Environment Support**: Tool-specific environment execution
-- **Mock MDT Integration**: Fallback for unavailable MDT tools
-
-## [0.6.0] - 2024-11-XX - Motion Correction Complete
-
-### ✅ Features Added
-- **Step 004 Eddy Correction**: FSL Eddy implementation
-  - CUDA acceleration support
-  - Motion and eddy current correction
-  - Brain mask generation with BET
-  - QC metrics and outlier detection
-
-### 🔧 Infrastructure
-- **CUDA Detection**: Automatic GPU acceleration
-- **Error Handling**: Robust processing with recovery
-
-## [0.5.0] - 2024-10-XX - Distortion Correction
-
-### ✅ Features Added
-- **Step 003 TopUp**: FSL TopUp distortion correction
-  - Dual phase encoding (AP/PA) support
-  - B0 field estimation and correction
-  - Automatic readout time detection
-  - BIDS-compliant metadata handling
-
-## [0.4.0] - 2024-09-XX - Basic Preprocessing
-
-### ✅ Features Added
-- **Step 001 Data Organization**: BIDS-aware data copying
-- **Step 002 DWI Denoising**: MRtrix3 MP-PCA implementation
-
-### 🏗️ Infrastructure
-- **BIDS Utilities**: Subject/session discovery and validation
-- **Subject Management**: Multi-session processing support
-- **Pipeline Runner**: Step-by-step execution framework
-
-## [0.3.0] - 2024-08-XX - Core Infrastructure
-
-### ✅ Features Added
-- **Configuration System**: Pydantic-based type-safe configuration
-- **Base Processor Framework**: Abstract base for all processing steps
-- **CLI Interface**: Rich command-line interface with progress tracking
-
-## [0.2.0] - 2024-07-XX - Project Structure
-
-### 🏗️ Infrastructure
-- **Python Package Structure**: Proper package organization
-- **Dependency Management**: requirements.txt and setup.py
-- **Testing Framework**: Basic pipeline testing
-
-## [0.1.0] - 2024-06-XX - Initial Migration
-
-### 🎯 Project Initiation
-- **Migration Planning**: Bash to Python migration strategy
-- **Project Setup**: Repository structure and initial planning
-- **Documentation**: Migration plan and status tracking
-
----
-
-## 🚀 Upcoming Releases
-
-### [1.0.0] - Complete Pipeline Release
-- Steps 010-011 (ROI Registration + Connectomics)
-- Full connectivity matrix generation
-- Production-ready release
-
-## [1.0.0-alpha] - 2024-12-XX - Production Ready Release
-
-### Added
-- **🎯 Complete Pipeline**: All 10 steps fully implemented and tested
-- **📊 Comprehensive Validation**: Rigorous testing across 100+ subjects
-- **🔧 Production Features**: Robust error handling, logging, and monitoring
-- **📖 Complete Documentation**: User guides, API docs, and tutorials
-- **🏗️ Automated Testing**: CI/CD pipeline with comprehensive test coverage
-- **🐳 Container Support**: Docker and Singularity images for reproducible execution
-- **☁️ Cloud Integration**: Support for AWS, GCP, and HPC cluster environments
-- Multi-conda environment support (FreeSurfer→subtract, ANTs→ants, MRtrix3→subtract)
-
- 

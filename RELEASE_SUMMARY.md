@@ -146,3 +146,32 @@ The SubTract pipeline has been **completely transformed** from a collection of B
 - **Research Impact**: Enables reproducible white matter tractography analysis
 
 **This v1.0.0-alpha release marks a significant milestone in neuroimaging pipeline development!** 🚀 
+
+## ✨ Key Features
+
+### 🔬 **Complete Pipeline (12 Steps)**
+1. **Data Organization** - BIDS-compliant data structure
+2. **DWI Denoising** - MP-PCA with MRtrix3
+3. **Gibbs Ringing Removal** - MRtrix3 mrdegibbs (NEW)
+4. **Distortion Correction** - FSL TopUp with dual phase encoding
+5. **Motion/Eddy Correction** - FSL Eddy with CUDA acceleration
+6. **Registration** - ANTs-based MNI→DWI transformation
+7. **Microstructure Modeling** - MDT NODDI & Ball-Stick fitting
+8. **MRtrix3 Preprocessing** - FOD estimation and 5TT generation
+9. **Tractography** - Probabilistic tracking with ACT
+10. **SIFT2 Filtering** - Track density optimization
+11. **ROI Registration** - Automated BNST network ROI transformation
+12. **Connectome Generation** - Connectivity matrices & fingerprints
+
+### 🐍 **Modern Python Architecture**
+- **Type Safety**: Full Pydantic validation
+- **Multi-Environment**: Automatic conda environment management
+- **Error Handling**: Robust resume capability
+- **Rich CLI**: Beautiful progress tracking with status dashboard
+- **BIDS Native**: Complete Brain Imaging Data Structure compliance
+
+### 🧠 **BNST-Specific Features**
+- **12 Bilateral ROIs**: Amygdala, BNST, Hippocampus, Hypothalamus, vmPFC
+- **Connectivity Fingerprints**: Microstructure-weighted connectivity matrices
+- **Composite Metrics**: Optimized NODDI + Ball-Stick combination
+- **Bilateral Analysis**: Separate left/right BNST connectivity patterns 

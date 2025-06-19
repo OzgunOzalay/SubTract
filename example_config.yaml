@@ -4,11 +4,11 @@
 
 # Paths configuration
 paths:
-  base_path: /home/ozgun/Projects/SubTract        # Base directory for the project
-  data_dir: /home/ozgun/Projects/SubTract/Data    # Directory containing raw BIDS data
-  analysis_dir: /home/ozgun/Projects/SubTract/derivatives/subtract  # Directory for analysis outputs
-  result_dir: /home/ozgun/Projects/SubTract/derivatives/subtract/results  # Directory for final results
-  script_dir: /home/ozgun/Projects/SubTract/src          # Directory containing scripts and templates
+  base_path: /opt/subtract        # Base directory for the project
+  data_dir: /opt/subtract/Data    # Directory containing raw BIDS data
+  analysis_dir: /opt/subtract/derivatives/subtract  # Directory for analysis outputs
+  result_dir: /opt/subtract/derivatives/subtract/results  # Directory for final results
+  script_dir: /opt/subtract/src          # Directory containing scripts and templates
 
 # BIDS dataset configuration
 bids:
@@ -26,7 +26,7 @@ bids:
 processing:
   # General processing
   n_threads: 10                      # Number of CPU threads for parallel processing
-  force_overwrite: false             # Force overwrite existing outputs (use with caution)
+  force_overwrite: true             # Force overwrite existing outputs (use with caution)
   
   # Denoising parameters
   denoise_method: "dwidenoise"       # DWI denoising method (MRtrix3)
@@ -74,13 +74,14 @@ rois:
 
 # Pipeline steps to run (in order)
 steps_to_run:
-  # - "copy_data"                      # Copy and organize BIDS data
-  # - "denoise"                        # DWI denoising using MP-PCA
-  # - "topup"                          # Field map estimation and correction
-  # - "eddy"                           # Eddy current and motion correction
+   - "copy_data"                      # Copy and organize BIDS data
+   - "denoise"                        # DWI denoising using MP-PCA
+   - "degibbs"                        # Remove Gibbs ringing artifacts
+   - "topup"                          # Field map estimation and correction
+   - "eddy"                           # Eddy current and motion correction
   # - "mdt"                            # Microstructure modeling (NODDI, DTI)
   # - "mrtrix_prep"                    # MRtrix3 preprocessing (response, FOD)
-  - "tractography"                   # Generate tracks per hemisphere
+  #- "tractography"                   # Generate tracks per hemisphere
   # - "sift2"                          # Track filtering and optimization
   # - "roi_registration"               # ROI registration to subject space
   # - "connectome"                     # Generate connectivity matrices

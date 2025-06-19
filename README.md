@@ -24,15 +24,16 @@ The pipeline performs probabilistic tractography between these regions and gener
 
 1. **Data Organization** (001) - BIDS-compliant data structure setup
 2. **DWI Denoising** (002) - MP-PCA denoising with MRtrix3
-3. **Distortion Correction** (003) - FSL TopUp with dual phase encoding
-4. **Motion/Eddy Correction** (004) - FSL Eddy with CUDA acceleration
-5. **Registration** (005) - ANTs-based MNI→DWI template registration
-6. **Microstructure Modeling** (006) - MDT NODDI & Ball-Stick fitting
-7. **MRtrix3 Preprocessing** (007) - FOD estimation and 5TT generation
-8. **Tractography** (008) - **✅ COMPLETE** - Probabilistic tracking with ACT
-9. **SIFT2 Filtering** (009) - **✅ COMPLETE** - Track density optimization
-10. **ROI Registration** (010) - **✅ COMPLETE** - fs2diff ROI transformation
-11. **Connectome Generation** (011) - **✅ COMPLETE** - Connectivity matrix & fingerprints
+3. **Gibbs Ringing Removal** (002b) - Gibbs artifact removal with MRtrix3 mrdegibbs
+4. **Distortion Correction** (003) - FSL TopUp with dual phase encoding
+5. **Motion/Eddy Correction** (004) - FSL Eddy with CUDA acceleration
+6. **Registration** (005) - ANTs-based MNI→DWI template registration
+7. **Microstructure Modeling** (006) - MDT NODDI & Ball-Stick fitting
+8. **MRtrix3 Preprocessing** (007) - FOD estimation and 5TT generation
+9. **Tractography** (008) - **✅ COMPLETE** - Probabilistic tracking with ACT
+10. **SIFT2 Filtering** (009) - **✅ COMPLETE** - Track density optimization
+11. **ROI Registration** (010) - **✅ COMPLETE** - fs2diff ROI transformation
+12. **Connectome Generation** (011) - **✅ COMPLETE** - Connectivity matrix & fingerprints
 
 ### 🆕 **New in v1.0.0 Alpha**
 - **Complete ROI Registration**: Automated transformation of 12 BNST network ROIs from fsaverage to subject DWI space

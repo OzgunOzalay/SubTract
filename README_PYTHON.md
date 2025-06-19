@@ -199,23 +199,28 @@ The SubTract pipeline consists of the following steps:
    - Multi-threaded processing
    - Smart resume capability
 
-3. **topup**: Distortion correction using FSL TopUp
+3. **degibbs**: Gibbs ringing removal using MRtrix3 mrdegibbs
+   - Removes Gibbs ringing artifacts using local subvoxel-shifts (via `subtract` conda environment)
+   - Applied to denoised DWI data
+   - Kellner et al. method implementation
+
+4. **topup**: Distortion correction using FSL TopUp
    - Dual phase encoding (AP/PA) support (via `base` conda environment)
    - B0 field estimation and correction
    - Automatic readout time detection from JSON metadata
 
-4. **eddy**: Motion and eddy current correction using FSL Eddy
+5. **eddy**: Motion and eddy current correction using FSL Eddy
    - CUDA acceleration support (eddy_cuda10.2) (via `base` conda environment)
    - Motion parameter estimation
    - Eddy current correction with brain masking
    - QC metrics and outlier detection
 
-5. **mdt**: Microstructure modeling using MDT
+6. **mdt**: Microstructure modeling using MDT
    - NODDI model fitting (via `mdt` conda environment)
    - Protocol file creation
    - Mock output generation when MDT unavailable
 
-6. **mrtrix_prep**: MRtrix3 preprocessing
+7. **mrtrix_prep**: MRtrix3 preprocessing
    - Response function estimation using dhollander algorithm (via `subtract` environment)
    - FOD computation with multi-shell multi-tissue CSD
    - 5-tissue-type image generation from FreeSurfer
@@ -224,10 +229,10 @@ The SubTract pipeline consists of the following steps:
 
 ### **🚧 Planned Steps**
 
-7. **tractography**: Whole-brain tractography using MRtrix3
-8. **sift2**: Track filtering using SIFT2  
-9. **roi_registration**: ROI registration to subject space
-10. **connectome**: Connectome construction and analysis
+8. **tractography**: Whole-brain tractography using MRtrix3
+9. **sift2**: Track filtering using SIFT2  
+10. **roi_registration**: ROI registration to subject space
+11. **connectome**: Connectome construction and analysis
 
 ### **✅ Testing Results (December 2024)**
 

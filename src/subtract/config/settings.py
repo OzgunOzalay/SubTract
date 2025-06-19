@@ -128,7 +128,7 @@ class SubtractConfig(BaseModel):
     # Pipeline steps to run
     steps_to_run: List[str] = Field(
         default=[
-            "copy_data", "denoise", "topup", "eddy", 
+            "copy_data", "denoise", "degibbs", "topup", "eddy", 
             "mdt", "mrtrix_prep", 
             "tractography", "sift2", "roi_registration", 
             "connectome"
