@@ -133,7 +133,7 @@ class TrackFilter(MRtrix3Processor):
         # NDI file from MDT processing (step 006) - BIDS format
         noddi_paths = [
             # Current actual structure: BIDS subject dir + legacy brain mask folder name  
-            analysis_dir / "dwi" / "mdt" / "output" / f"{subject_id}_brain_mask" / "NODDIDA" / "NDI.nii.gz",
+            analysis_dir / "dwi" / "mdt" / "output" / f"sub-{subject_id}_brain_mask" / "NODDIDA" / "NDI.nii.gz",
             # Alternative simplified location
             analysis_dir / "dwi" / "mdt" / "NODDIDA" / "NDI.nii.gz",
         ]
@@ -169,7 +169,7 @@ class TrackFilter(MRtrix3Processor):
         """Create NDI-weighted processing mask for SIFT2."""
         # Find NDI file from NODDI processing - BIDS format
         noddi_paths = [
-            analysis_dir / "dwi" / "mdt" / "output" / f"{subject_id}_brain_mask" / "NODDIDA" / "NDI.nii.gz",
+            analysis_dir / "dwi" / "mdt" / "output" / f"sub-{subject_id}_brain_mask" / "NODDIDA" / "NDI.nii.gz",
             analysis_dir / "dwi" / "mdt" / "NODDIDA" / "NDI.nii.gz",
         ]
         

@@ -149,7 +149,7 @@ For questions, bug reports, or feature requests, please open an issue on GitHub.
 
 ---
 
-**🎉 SubTract v1.0.0-alpha represents a complete transformation of the pipeline from Bash to modern Python, providing researchers with a robust, scalable, and maintainable solution for white matter tractography analysis.**
+**🎉 SubTract v1.0.0-alpha represents a complete transformation of the pipeline from Bash to modern Python, providing researchers with a robust, scalable, and maintainable solution for white matter tractography analysis.** 
 
 ## ✨ New Features
 

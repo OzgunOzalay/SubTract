@@ -70,11 +70,11 @@ class MDTProcessor(BaseProcessor):
         mdt_dir = subject_dir / "dwi" / "mdt"
         
         return {
-            "dwi": mdt_dir / f"{subject_id}.nii.gz",
-            "bval": mdt_dir / f"{subject_id}.bval",
-            "bvec": mdt_dir / f"{subject_id}.bvec", 
-            "mask": mdt_dir / f"{subject_id}_brain_mask.nii.gz",
-            "protocol": mdt_dir / f"{subject_id}.prtcl"
+            "dwi": mdt_dir / f"sub-{subject_id}.nii.gz",
+            "bval": mdt_dir / f"sub-{subject_id}.bval",
+            "bvec": mdt_dir / f"sub-{subject_id}.bvec", 
+            "mask": mdt_dir / f"sub-{subject_id}_brain_mask.nii.gz",
+            "protocol": mdt_dir / f"sub-{subject_id}.prtcl"
         }
     
     def process(self, subject_id: str, session_id: Optional[str] = None) -> 'ProcessingResult':
@@ -242,12 +242,12 @@ class MDTProcessor(BaseProcessor):
         """Run actual MDT processing commands."""
         try:
             # Create protocol file
-            cmd = ['mdt-create-protocol', f'{subject_id}.bvec', f'{subject_id}.bval']
+            cmd = ['mdt-create-protocol', f'sub-{subject_id}.bvec', f'sub-{subject_id}.bval']
             result = self.run_command(cmd, cwd=mdt_dir)
             
             # Fit NODDI model
-            cmd = ['mdt-model-fit', 'AxCaliber', f'{subject_id}.nii.gz', 
-                  f'{subject_id}.prtcl', f'{subject_id}_brain_mask.nii.gz']
+            cmd = ['mdt-model-fit', 'AxCaliber', f'sub-{subject_id}.nii.gz', 
+                  f'sub-{subject_id}.prtcl', f'sub-{subject_id}_brain_mask.nii.gz']
             result = self.run_command(cmd, cwd=mdt_dir)
             
             self.logger.info(f"MDT processing completed successfully for {subject_id}")

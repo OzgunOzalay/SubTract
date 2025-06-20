@@ -23,7 +23,7 @@ bids:
 
 # Processing parameters
 processing:
-  n_threads: 10
+  n_threads: 20
   force_overwrite: true
   denoise_method: "dwidenoise"
   topup_config: "b02b0.cnf"
@@ -32,7 +32,7 @@ processing:
   eddy_method: "eddy_cuda10.2"
   bet_threshold: 0.2
   registration_type: "SyNQuick"
-  n_tracks: 5000000
+  n_tracks: 1000000
   track_algorithm: "iFOD2"
   track_cutoff: 0.045
   sift2_ndi_threshold: 0.1
@@ -59,11 +59,12 @@ rois:
 
 # Pipeline steps to run
 steps_to_run:
-   - "copy_data"                      # Copy and organize BIDS data
-   - "denoise"                        # DWI denoising using MP-PCA
-   - "degibbs"                        # Remove Gibbs ringing artifacts
-   - "topup"                          # Field map estimation and correction
-   - "eddy"                           # Eddy current and motion correction
-
+#   - "copy_data"                      # Copy and organize BIDS data
+#   - "denoise"                        # DWI denoising using MP-PCA
+#   - "degibbs"                        # Remove Gibbs ringing artifacts
+#   - "topup"                          # Field map estimation and correction
+#   - "eddy"                           # Eddy current and motion correction
+#   - "mrtrix_prep"                    # MRtrix3 preprocessing (response, FOD) - test FreeSurfer fix
+   - "tractography"                   # Generate tracks per hemisphere
 # Subject filtering
 subject_filter: null 

@@ -177,10 +177,10 @@ class MRtrixPreprocessor(MRtrix3Processor):
     def _setup_directories(self, subject_id: str, mdt_dir: Path, mrtrix_dir: Path) -> List[Path]:
         """Setup MRtrix3 directory and copy required files from MDT."""
         files_to_copy = [
-            (mdt_dir / f"{subject_id}.nii.gz", mrtrix_dir / f"{subject_id}.nii.gz"),
-            (mdt_dir / f"{subject_id}.bvec", mrtrix_dir / f"{subject_id}.bvec"),
-            (mdt_dir / f"{subject_id}.bval", mrtrix_dir / f"{subject_id}.bval"),
-            (mdt_dir / f"{subject_id}_brain_mask.nii.gz", mrtrix_dir / f"{subject_id}_brain_mask.nii.gz")
+            (mdt_dir / f"sub-{subject_id}.nii.gz", mrtrix_dir / f"sub-{subject_id}.nii.gz"),
+            (mdt_dir / f"sub-{subject_id}.bvec", mrtrix_dir / f"sub-{subject_id}.bvec"),
+            (mdt_dir / f"sub-{subject_id}.bval", mrtrix_dir / f"sub-{subject_id}.bval"),
+            (mdt_dir / f"sub-{subject_id}_brain_mask.nii.gz", mrtrix_dir / f"sub-{subject_id}_brain_mask.nii.gz")
         ]
         
         copied_files = []
@@ -198,26 +198,26 @@ class MRtrixPreprocessor(MRtrix3Processor):
         """Convert data to MIF format."""
         # Convert DWI data to MIF
         cmd = [
-            "mrconvert", f"{subject_id}.nii.gz", f"{subject_id}.mif",
-            "-fslgrad", f"{subject_id}.bvec", f"{subject_id}.bval"
+            "mrconvert", f"sub-{subject_id}.nii.gz", f"sub-{subject_id}.mif",
+            "-fslgrad", f"sub-{subject_id}.bvec", f"sub-{subject_id}.bval"
         ]
         self.run_command(cmd, cwd=mrtrix_dir)
         
         # Convert brain mask to MIF
         cmd = [
-            "mrconvert", f"{subject_id}_brain_mask.nii.gz", f"{subject_id}_brain_mask.mif"
+            "mrconvert", f"sub-{subject_id}_brain_mask.nii.gz", f"sub-{subject_id}_brain_mask.mif"
         ]
         self.run_command(cmd, cwd=mrtrix_dir)
         
         return [
-            mrtrix_dir / f"{subject_id}.mif",
-            mrtrix_dir / f"{subject_id}_brain_mask.mif"
+            mrtrix_dir / f"sub-{subject_id}.mif",
+            mrtrix_dir / f"sub-{subject_id}_brain_mask.mif"
         ]
     
     def _estimate_response_functions(self, subject_id: str, mrtrix_dir: Path) -> List[Path]:
         """Estimate response functions using dhollander algorithm."""
         cmd = [
-            "dwi2response", "dhollander", f"{subject_id}.mif",
+            "dwi2response", "dhollander", f"sub-{subject_id}.mif",
             "wm.txt", "gm.txt", "csf.txt", "-voxels", "voxels.mif"
         ]
         self.run_command(cmd, cwd=mrtrix_dir)
@@ -232,8 +232,8 @@ class MRtrixPreprocessor(MRtrix3Processor):
     def _estimate_fods(self, subject_id: str, mrtrix_dir: Path) -> List[Path]:
         """Estimate Fiber Orientation Densities using multi-shell multi-tissue CSD."""
         cmd = [
-            "dwi2fod", "msmt_csd", f"{subject_id}.mif",
-            "-mask", f"{subject_id}_brain_mask.mif",
+            "dwi2fod", "msmt_csd", f"sub-{subject_id}.mif",
+            "-mask", f"sub-{subject_id}_brain_mask.mif",
             "wm.txt", "wmfod.mif",
             "gm.txt", "gmfod.mif", 
             "csf.txt", "csffod.mif"
@@ -261,7 +261,7 @@ class MRtrixPreprocessor(MRtrix3Processor):
             "wmfod.mif", "wmfod_norm.mif",
             "gmfod.mif", "gmfod_norm.mif", 
             "csffod.mif", "csffod_norm.mif",
-            "-mask", f"{subject_id}_brain_mask.mif"
+            "-mask", f"sub-{subject_id}_brain_mask.mif"
         ]
         self.run_command(cmd, cwd=mrtrix_dir)
         
@@ -284,66 +284,24 @@ class MRtrixPreprocessor(MRtrix3Processor):
             self.logger.warning("Creating placeholder 5TT file")
             
             # Create a placeholder 5TT file by copying brain mask
-            cmd = ["mrconvert", f"{subject_id}_brain_mask.mif", "5tt_nocoreg_fs.mif"]
+            cmd = ["mrconvert", f"sub-{subject_id}_brain_mask.mif", "5tt_nocoreg_fs.mif"]
             self.run_command(cmd, cwd=mrtrix_dir)
         else:
-            # Fix the FreeSurfer lookup table issue by creating a corrected version
-            self.logger.info("Creating corrected FreeSurfer lookup table")
-            corrected_lut = mrtrix_dir / "FreeSurferColorLUT_fixed.txt"
+            # Use MRtrix3's built-in FreeSurfer LUT file
+            mrtrix_lut = "/opt/miniconda/envs/subtract/share/mrtrix3/_5ttgen/FreeSurfer2ACT.txt"
             
-            # Read the original FreeSurfer LUT and fix inconsistent lines
-            original_lut = Path("/usr/local/freesurfer/8.0.0/FreeSurferColorLUT.txt")
-            if not original_lut.exists():
-                # Try alternative FreeSurfer paths
-                for fs_path in ["/usr/local/freesurfer/FreeSurferColorLUT.txt", 
-                               "/opt/freesurfer/FreeSurferColorLUT.txt"]:
-                    if Path(fs_path).exists():
-                        original_lut = Path(fs_path)
-                        break
+            self.logger.info("Using MRtrix3 built-in FreeSurfer LUT file")
             
-            if original_lut.exists():
-                with open(original_lut, 'r') as infile, open(corrected_lut, 'w') as outfile:
-                    for line_num, line in enumerate(infile, 1):
-                        line = line.strip()
-                        if not line or line.startswith('#'):
-                            outfile.write(line + '\n')
-                            continue
-                        
-                        # Split the line and check column count
-                        parts = line.split()
-                        if len(parts) > 6:
-                            # Fix lines with too many columns by keeping only first 6
-                            fixed_line = ' '.join(parts[:6])
-                            outfile.write(fixed_line + '\n')
-                            if line_num == 511:  # Log the specific problematic line
-                                self.logger.debug(f"Fixed line {line_num}: {line} -> {fixed_line}")
-                        else:
-                            outfile.write(line + '\n')
-                
-                # Generate 5TT from FreeSurfer using the corrected lookup table
-                cmd = [
-                    "5ttgen", "freesurfer",
-                    str(aseg_file.resolve()),
-                    str((mrtrix_dir / "5tt_nocoreg_fs.mif").resolve()),
-                    "-lut", str(corrected_lut.resolve()),
-                    "-force"
-                ]
-                
-                self.run_command(cmd, cwd=mrtrix_dir)
-                
-                # Clean up the temporary corrected lookup table
-                corrected_lut.unlink()
-            else:
-                self.logger.warning("Could not find FreeSurfer lookup table, using MRtrix3 default")
-                # Fallback to default MRtrix3 method
-                cmd = [
-                    "5ttgen", "freesurfer",
-                    str(aseg_file.resolve()),
-                    str((mrtrix_dir / "5tt_nocoreg_fs.mif").resolve()),
-                    "-force"
-                ]
-                
-                self.run_command(cmd, cwd=mrtrix_dir)
+            # Generate 5TT from FreeSurfer using MRtrix3's LUT file
+            cmd = [
+                "5ttgen", "freesurfer",
+                str(aseg_file.resolve()),
+                str((mrtrix_dir / "5tt_nocoreg_fs.mif").resolve()),
+                "-lut", mrtrix_lut,
+                "-force"
+            ]
+            
+            self.run_command(cmd, cwd=mrtrix_dir)
         
         return [mrtrix_dir / "5tt_nocoreg_fs.mif"]
     
@@ -352,7 +310,7 @@ class MRtrixPreprocessor(MRtrix3Processor):
         # Extract and average B0 images
         cmd = [
             "sh", "-c",
-            f"dwiextract {subject_id}.mif - -bzero | mrmath - mean mean_b0.mif -axis 3 -force"
+            f"dwiextract sub-{subject_id}.mif - -bzero | mrmath - mean mean_b0.mif -axis 3 -force"
         ]
         self.run_command(cmd, cwd=mrtrix_dir)
         
@@ -368,7 +326,7 @@ class MRtrixPreprocessor(MRtrix3Processor):
         self.run_command(cmd, cwd=mrtrix_dir)
         
         # Create brain-masked B0
-        cmd = ["fslmaths", "mean_b0.nii.gz", "-mas", f"{subject_id}_brain_mask.nii.gz", "mean_b0_brain.nii.gz"]
+        cmd = ["fslmaths", "mean_b0.nii.gz", "-mas", f"sub-{subject_id}_brain_mask.nii.gz", "mean_b0_brain.nii.gz"]
         self.run_command(cmd, cwd=mrtrix_dir)
         
         cmd = ["mrconvert", "mean_b0_brain.nii.gz", "mean_b0_brain.mif", "-force"]
@@ -440,10 +398,10 @@ class MRtrixPreprocessor(MRtrix3Processor):
         mdt_dir = analysis_dir / "dwi" / "mdt"
         
         required_files = [
-            mdt_dir / f"{subject_id}.nii.gz",
-            mdt_dir / f"{subject_id}.bvec",
-            mdt_dir / f"{subject_id}.bval",
-            mdt_dir / f"{subject_id}_brain_mask.nii.gz"
+            mdt_dir / f"sub-{subject_id}.nii.gz",
+            mdt_dir / f"sub-{subject_id}.bvec",
+            mdt_dir / f"sub-{subject_id}.bval",
+            mdt_dir / f"sub-{subject_id}_brain_mask.nii.gz"
         ]
         
         missing_files = [str(f) for f in required_files if not f.exists()]
@@ -464,7 +422,7 @@ class MRtrixPreprocessor(MRtrix3Processor):
         mrtrix_dir = analysis_dir / "dwi" / "mrtrix3"
         
         return [
-            mrtrix_dir / f"{subject_id}.mif",
+            mrtrix_dir / f"sub-{subject_id}.mif",
             mrtrix_dir / "wmfod_norm.mif",
             mrtrix_dir / "gmfod_norm.mif",
             mrtrix_dir / "csffod_norm.mif",

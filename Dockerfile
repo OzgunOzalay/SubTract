@@ -52,6 +52,8 @@ ENV FSLDIR="/opt/fsl-6.0.7.1"
 ENV FSLOUTPUTTYPE="NIFTI_GZ"
 ENV FSLMULTIFILEQUIT="TRUE"
 
+# FreeSurfer environment will be set dynamically in entrypoint.sh
+
 # Create the three separate conda environments as expected by the pipeline
 
 # 1. Create 'subtract' environment with MRtrix3 and Python tools

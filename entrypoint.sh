@@ -9,22 +9,20 @@ if [ "$1" = "bash" ] || [ "$1" = "sh" ]; then
     exec "$@"
 fi
 
-# Check if config file is provided
+# Check if arguments are provided
 if [ $# -eq 0 ]; then
-    echo "Usage: docker run <image> <config.yaml>"
-    echo "Example: docker run subtract-pipeline /data/config.yaml"
-    echo "For interactive shell: docker run -it <image> bash"
+    echo "Usage: docker run <image> <command> [args...]"
+    echo "Examples:"
+    echo "  docker run subtract-pipeline run-config /data/config.yaml"
+    echo "  docker run subtract-pipeline run /data/bids --steps tractography"
+    echo "  docker run -it <image> bash"
     exit 1
 fi
 
-CONFIG_FILE="$1"
+COMMAND="$1"
+shift
 
-if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Error: Configuration file $CONFIG_FILE not found"
-    exit 1
-fi
-
-echo "Running SubTract pipeline with configuration: $CONFIG_FILE"
+echo "Running SubTract command: $COMMAND"
 echo "Available conda environments:"
 /opt/miniconda/bin/conda env list
 echo ""
@@ -37,4 +35,4 @@ echo "  SubTract: $(/opt/miniconda/bin/conda run -n subtract which subtract 2>/d
 echo ""
 
 # Run the pipeline using conda run to ensure proper environment activation
-/opt/miniconda/bin/conda run -n subtract subtract run-config "$CONFIG_FILE" 
+/opt/miniconda/bin/conda run -n subtract subtract "$COMMAND" "$@" 

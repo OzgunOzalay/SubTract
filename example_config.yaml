@@ -44,7 +44,7 @@ processing:
   registration_type: "SyNQuick"      # ANTs registration type
   
   # Tractography parameters
-  n_tracks: 5000000                  # Number of tracks to generate per hemisphere
+  n_tracks: 1000000                  # Number of tracks to generate per hemisphere
   track_algorithm: "iFOD2"           # Tracking algorithm (MRtrix3)
   track_cutoff: 0.045                  # FOD amplitude cutoff for terminating tracks (default: 0.1) Multiplied by 0.5 when using ACT
   
@@ -72,19 +72,10 @@ rois:
   
   gmwm_boundary: true               # Use GM-WM boundary for tractography
 
-# Pipeline steps to run (in order)
+# Pipeline steps to run (in order) - ONLY MRtrix preprocessing and tractography
 steps_to_run:
-   - "copy_data"                      # Copy and organize BIDS data
-   - "denoise"                        # DWI denoising using MP-PCA
-   - "degibbs"                        # Remove Gibbs ringing artifacts
-   - "topup"                          # Field map estimation and correction
-   - "eddy"                           # Eddy current and motion correction
-  # - "mdt"                            # Microstructure modeling (NODDI, DTI)
-  # - "mrtrix_prep"                    # MRtrix3 preprocessing (response, FOD)
-  #- "tractography"                   # Generate tracks per hemisphere
-  # - "sift2"                          # Track filtering and optimization
-  # - "roi_registration"               # ROI registration to subject space
-  # - "connectome"                     # Generate connectivity matrices
+  - "mrtrix_prep"                    # MRtrix3 preprocessing (response, FOD)
+  - "tractography"                   # Generate tracks per hemisphere
 
 # Subject filtering (regex pattern)
 subject_filter: null                 # null = all subjects, or specify pattern like "^(001|002)$" 
