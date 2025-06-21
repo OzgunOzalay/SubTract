@@ -83,13 +83,24 @@ class EddyCorrector(BaseProcessor):
             # Create Eddy directory
             eddy_dir.mkdir(parents=True, exist_ok=True)
             
+            # Determine phase encoding direction from TopUp outputs
+            pe_direction = self._detect_phase_encoding_direction(topup_dir, subject_id)
+            if not pe_direction:
+                return ProcessingResult(
+                    success=False,
+                    outputs=[],
+                    metrics={},
+                    execution_time=time.time() - start_time,
+                    error_message=f"Could not determine phase encoding direction from TopUp outputs"
+                )
+            
             outputs = []
             metrics = {}
             
             # Step 1: Setup Eddy directory with required files
-            self.logger.info("Setting up Eddy directory with TopUp outputs")
+            self.logger.info(f"Setting up Eddy directory with TopUp outputs for {pe_direction}")
             required_files = self._setup_eddy_directory(
-                subject_id, dwi_dir, topup_dir, eddy_dir
+                subject_id, dwi_dir, topup_dir, eddy_dir, pe_direction
             )
             outputs.extend(required_files)
             
@@ -110,12 +121,13 @@ class EddyCorrector(BaseProcessor):
             
             # Step 5: Run Eddy correction
             self.logger.info("Running FSL Eddy current correction with CUDA")
-            eddy_outputs = self._run_eddy_correction(subject_id, eddy_dir)
+            eddy_outputs = self._run_eddy_correction(subject_id, eddy_dir, pe_direction)
             outputs.extend(eddy_outputs)
             
             metrics["files_processed"] = len(outputs)
             metrics["eddy_method"] = self.config.processing.eddy_method
             metrics["cuda_enabled"] = self.config.processing.eddy_cuda
+            metrics["pe_direction"] = pe_direction
             
             execution_time = time.time() - start_time
             
@@ -140,8 +152,31 @@ class EddyCorrector(BaseProcessor):
                 error_message=error_msg
             )
     
+    def _detect_phase_encoding_direction(self, topup_dir: Path, subject_id: str) -> Optional[str]:
+        """
+        Detect phase encoding direction from TopUp outputs.
+        
+        Args:
+            topup_dir: TopUp directory path
+            subject_id: Subject identifier
+            
+        Returns:
+            Phase encoding direction string (e.g., "AP-PA", "LR-RL") or None if not found
+        """
+        # Look for TopUp field coefficient files with different phase encoding directions
+        possible_directions = ["AP-PA", "LR-RL"]
+        
+        for direction in possible_directions:
+            fieldcoef_file = topup_dir / f"{subject_id}_dir-{direction}_dwi_Topup_fieldcoef.nii.gz"
+            if fieldcoef_file.exists():
+                self.logger.info(f"Detected phase encoding direction: {direction}")
+                return direction
+        
+        self.logger.error(f"Could not detect phase encoding direction from TopUp outputs")
+        return None
+    
     def _setup_eddy_directory(self, subject_id: str, dwi_dir: Path, 
-                              topup_dir: Path, eddy_dir: Path) -> List[Path]:
+                              topup_dir: Path, eddy_dir: Path, pe_direction: str) -> List[Path]:
         """
         Setup Eddy directory with required files from TopUp and DWI.
         
@@ -150,6 +185,7 @@ class EddyCorrector(BaseProcessor):
             dwi_dir: DWI directory path
             topup_dir: TopUp directory path
             eddy_dir: Eddy directory path
+            pe_direction: Phase encoding direction string (e.g., "AP-PA", "LR-RL")
             
         Returns:
             List of copied files
@@ -164,24 +200,25 @@ class EddyCorrector(BaseProcessor):
              eddy_dir / "acq_params.txt"),
             
             # From TopUp: field coefficients
-            (topup_dir / f"{subject_id}_dir-AP-PA_dwi_Topup_fieldcoef.nii.gz",
-             eddy_dir / f"{subject_id}_dir-AP-PA_dwi_Topup_fieldcoef.nii.gz"),
+            (topup_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup_fieldcoef.nii.gz",
+             eddy_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup_fieldcoef.nii.gz"),
             
             # From TopUp: movement parameters
-            (topup_dir / f"{subject_id}_dir-AP-PA_dwi_Topup_movpar.txt",
-             eddy_dir / f"{subject_id}_dir-AP-PA_dwi_Topup_movpar.txt"),
+            (topup_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup_movpar.txt",
+             eddy_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup_movpar.txt"),
         ]
         
-        # Copy bvals and bvecs from DWI directory (use AP direction)
+        # Copy bvals and bvecs from DWI directory (use first direction from pe_direction)
+        first_direction = pe_direction.split('-')[0]  # AP from AP-PA, LR from LR-RL
         for suffix in ['.bval', '.bvec']:
-            pattern = f"*{subject_id}*dir-AP*dwi{suffix}"
+            pattern = f"*{subject_id}*dir-{first_direction}*dwi{suffix}"
             files = list(dwi_dir.glob(pattern))
             if files:
                 source_file = files[0]
                 dest_file = eddy_dir / f"{subject_id}_dwi{suffix}"
                 files_to_copy.append((source_file, dest_file))
             else:
-                raise FileNotFoundError(f"Could not find {suffix} file for {subject_id}")
+                raise FileNotFoundError(f"Could not find {suffix} file for {subject_id} with direction {first_direction}")
         
         # Copy files
         copied_files = []
@@ -316,13 +353,14 @@ class EddyCorrector(BaseProcessor):
         self.logger.debug(f"Created index file with {n_volumes} entries")
         return index_file
     
-    def _run_eddy_correction(self, subject_id: str, eddy_dir: Path) -> List[Path]:
+    def _run_eddy_correction(self, subject_id: str, eddy_dir: Path, pe_direction: str) -> List[Path]:
         """
         Run FSL Eddy current correction.
         
         Args:
             subject_id: Subject identifier
             eddy_dir: Eddy directory path
+            pe_direction: Phase encoding direction string (e.g., "AP-PA", "LR-RL")
             
         Returns:
             List of output files from Eddy
@@ -345,7 +383,7 @@ class EddyCorrector(BaseProcessor):
             "--acqp=acq_params.txt",
             f"--bvecs={subject_id}_dwi.bvec",
             f"--bvals={subject_id}_dwi.bval",
-            f"--topup={subject_id}_dir-AP-PA_dwi_Topup",
+            f"--topup={subject_id}_dir-{pe_direction}_dwi_Topup",
             "--flm=quadratic",
             f"--out={subject_id}_eddy_unwarped",
             "--data_is_shelled"
@@ -431,11 +469,17 @@ class EddyCorrector(BaseProcessor):
             self.logger.error(f"TopUp directory does not exist: {topup_dir}")
             return False
         
+        # Detect phase encoding direction
+        pe_direction = self._detect_phase_encoding_direction(topup_dir, subject_id)
+        if not pe_direction:
+            self.logger.error(f"Could not determine phase encoding direction from TopUp outputs")
+            return False
+        
         # Check for required TopUp outputs
         required_topup_files = [
             topup_dir / f"{subject_id}_topup_dwi.nii.gz",
             topup_dir / "acq_params.txt",
-            topup_dir / f"{subject_id}_dir-AP-PA_dwi_Topup_fieldcoef.nii.gz"
+            topup_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup_fieldcoef.nii.gz"
         ]
         
         for file_path in required_topup_files:
@@ -443,12 +487,13 @@ class EddyCorrector(BaseProcessor):
                 self.logger.error(f"Required TopUp file not found: {file_path}")
                 return False
         
-        # Check for bval/bvec files
-        bval_files = list(dwi_dir.glob(f"*{subject_id}*dir-AP*dwi.bval"))
-        bvec_files = list(dwi_dir.glob(f"*{subject_id}*dir-AP*dwi.bvec"))
+        # Check for bval/bvec files (use first direction from pe_direction)
+        first_direction = pe_direction.split('-')[0]
+        bval_files = list(dwi_dir.glob(f"*{subject_id}*dir-{first_direction}*dwi.bval"))
+        bvec_files = list(dwi_dir.glob(f"*{subject_id}*dir-{first_direction}*dwi.bvec"))
         
         if not bval_files or not bvec_files:
-            self.logger.error(f"bval/bvec files not found for {subject_id}")
+            self.logger.error(f"bval/bvec files not found for {subject_id} with direction {first_direction}")
             return False
         
         # Check that FSL commands are available

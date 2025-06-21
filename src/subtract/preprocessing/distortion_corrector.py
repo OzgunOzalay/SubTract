@@ -383,7 +383,8 @@ class DistortionCorrector(BaseProcessor):
             f"--datain={acq_params.resolve()}",
             f"--config={fsl_config_path}",
             f"--out={topup_output_base.resolve()}",
-            f"--nthr={self.config.processing.n_threads}"
+            f"--nthr={self.config.processing.n_threads}",
+            "--subsamp=1"
         ]
         
         try:
