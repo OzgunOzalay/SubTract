@@ -22,7 +22,7 @@ class DistortionCorrector(BaseProcessor):
     TopUp distortion correction processor using FSL TopUp.
     
     This processor corrects distortions caused by magnetic field inhomogeneities
-    using dual phase encoding (AP/PA) DWI data and FSL TopUp.
+    using dual phase encoding (AP/PA or LR/RL) DWI data and FSL TopUp.
     """
     
     def __init__(self, config: SubtractConfig, logger: Optional[logging.Logger] = None):
@@ -71,9 +71,9 @@ class DistortionCorrector(BaseProcessor):
             topup_dir.mkdir(parents=True, exist_ok=True)
             
             # Find dual phase encoding DWI files
-            pe_files = self._find_phase_encoding_files(dwi_dir, subject_id)
+            pe_files, pe_direction = self._find_phase_encoding_files(dwi_dir, subject_id)
             
-            if not pe_files['ap'] or not pe_files['pa']:
+            if not pe_files['first'] or not pe_files['second']:
                 self.logger.warning(f"Subject {subject_id} does not have dual phase encoding data, skipping TopUp")
                 return ProcessingResult(
                     success=True,
@@ -99,35 +99,36 @@ class DistortionCorrector(BaseProcessor):
             metrics = {}
             
             # Step 1: Extract B0 images
-            self.logger.info("Extracting B0 images from AP and PA data")
-            b0_ap, b0_pa = self._extract_b0_images(pe_files, topup_dir, subject_id)
-            outputs.extend([b0_ap, b0_pa])
+            self.logger.info(f"Extracting B0 images from {pe_direction} data")
+            b0_first, b0_second = self._extract_b0_images(pe_files, topup_dir, subject_id, pe_direction)
+            outputs.extend([b0_first, b0_second])
             
             # Step 2: Merge B0 images
-            self.logger.info("Merging AP and PA B0 images")
-            merged_b0 = self._merge_b0_images(b0_ap, b0_pa, topup_dir, subject_id)
+            self.logger.info(f"Merging {pe_direction} B0 images")
+            merged_b0 = self._merge_b0_images(b0_first, b0_second, topup_dir, subject_id, pe_direction)
             outputs.append(merged_b0)
             
             # Step 3: Create acquisition parameters file
             self.logger.info("Creating acquisition parameters file")
-            acq_params_file = self._create_acquisition_params(pe_files, topup_dir)
+            acq_params_file = self._create_acquisition_params(pe_files, topup_dir, pe_direction)
             outputs.append(acq_params_file)
             
             # Step 4: Run TopUp
             self.logger.info("Running FSL TopUp to estimate field inhomogeneity")
-            topup_output = self._run_topup(merged_b0, acq_params_file, topup_dir, subject_id)
+            topup_output = self._run_topup(merged_b0, acq_params_file, topup_dir, subject_id, pe_direction)
             outputs.extend(topup_output)
             
             # Step 5: Apply TopUp correction
             self.logger.info("Applying TopUp correction to DWI data")
             corrected_dwi = self._apply_topup(
-                pe_files['ap'], acq_params_file, topup_output[0], topup_dir, subject_id
+                pe_files['first'], acq_params_file, topup_output[0], topup_dir, subject_id
             )
             outputs.append(corrected_dwi)
             
             metrics["files_processed"] = len(outputs)
-            metrics["ap_file"] = pe_files['ap'].name
-            metrics["pa_file"] = pe_files['pa'].name
+            metrics["first_file"] = pe_files['first'].name
+            metrics["second_file"] = pe_files['second'].name
+            metrics["pe_direction"] = pe_direction
             
             execution_time = time.time() - start_time
             
@@ -152,64 +153,85 @@ class DistortionCorrector(BaseProcessor):
                 error_message=error_msg
             )
     
-    def _find_phase_encoding_files(self, dwi_dir: Path, subject_id: str) -> Dict[str, Optional[Path]]:
+    def _find_phase_encoding_files(self, dwi_dir: Path, subject_id: str) -> Tuple[Dict[str, Optional[Path]], str]:
         """
-        Find AP and PA phase encoding DWI files.
+        Find dual phase encoding DWI files (AP/PA or LR/RL).
         
         Args:
             dwi_dir: DWI directory path
             subject_id: Subject identifier
             
         Returns:
-            Dictionary with 'ap' and 'pa' file paths
+            Tuple of (file dictionary, phase encoding direction string)
         """
-        pe_files = {'ap': None, 'pa': None}
+        # Define phase encoding direction pairs
+        pe_pairs = {
+            'AP-PA': ['AP', 'PA'],
+            'LR-RL': ['LR', 'RL']
+        }
         
         # Look for denoised files first, then original files
         for suffix in ['_denoised.nii.gz', '.nii.gz', '.nii']:
-            for direction in ['AP', 'PA']:
-                pattern = f"*{subject_id}*dir-{direction}*dwi{suffix}"
-                files = list(dwi_dir.glob(pattern))
+            for pe_direction, directions in pe_pairs.items():
+                pe_files = {'first': None, 'second': None}
+                found_count = 0
                 
-                if files:
-                    pe_files[direction.lower()] = files[0]
-                    self.logger.debug(f"Found {direction} file: {files[0]}")
+                for direction in directions:
+                    pattern = f"*{subject_id}*dir-{direction}*dwi{suffix}"
+                    files = list(dwi_dir.glob(pattern))
+                    
+                    if files:
+                        if found_count == 0:
+                            pe_files['first'] = files[0]
+                        else:
+                            pe_files['second'] = files[0]
+                        found_count += 1
+                        self.logger.debug(f"Found {direction} file: {files[0]}")
+                
+                # If we found both files for this direction pair, return them
+                if pe_files['first'] and pe_files['second']:
+                    self.logger.info(f"Found {pe_direction} phase encoding pair")
+                    return pe_files, pe_direction
         
-        return pe_files
+        # If no complete pair found, return empty dict and empty string
+        return {'first': None, 'second': None}, ""
     
-    def _extract_b0_images(self, pe_files: Dict[str, Path], topup_dir: Path, subject_id: str) -> Tuple[Path, Path]:
+    def _extract_b0_images(self, pe_files: Dict[str, Path], topup_dir: Path, subject_id: str, pe_direction: str) -> Tuple[Path, Path]:
         """
-        Extract B0 (first volume) from AP and PA DWI data.
+        Extract B0 (first volume) from dual phase encoding DWI data.
         
         Args:
-            pe_files: Dictionary with AP and PA file paths
+            pe_files: Dictionary with first and second file paths
             topup_dir: TopUp working directory
             subject_id: Subject identifier
+            pe_direction: Phase encoding direction string (e.g., "AP-PA", "LR-RL")
             
         Returns:
-            Tuple of (B0_AP_path, B0_PA_path)
+            Tuple of (B0_first_path, B0_second_path)
         """
-        b0_ap = topup_dir / f"{subject_id}_dir-AP_dwi.nii.gz"
-        b0_pa = topup_dir / f"{subject_id}_dir-PA_dwi.nii.gz"
+        # Extract direction names from pe_direction
+        directions = pe_direction.split('-')
+        b0_first = topup_dir / f"{subject_id}_dir-{directions[0]}_dwi.nii.gz"
+        b0_second = topup_dir / f"{subject_id}_dir-{directions[1]}_dwi.nii.gz"
         
-        # Extract first volume (B0) from AP data
-        cmd_ap = [
+        # Extract first volume (B0) from first data
+        cmd_first = [
             "fslroi",
-            str(pe_files['ap'].resolve()),
-            str(b0_ap.resolve()),
+            str(pe_files['first'].resolve()),
+            str(b0_first.resolve()),
             "0", "1"
         ]
         
-        # Extract first volume (B0) from PA data
-        cmd_pa = [
+        # Extract first volume (B0) from second data
+        cmd_second = [
             "fslroi",
-            str(pe_files['pa'].resolve()),
-            str(b0_pa.resolve()),
+            str(pe_files['second'].resolve()),
+            str(b0_second.resolve()),
             "0", "1"
         ]
         
         # Run commands
-        for cmd, output_file in [(cmd_ap, b0_ap), (cmd_pa, b0_pa)]:
+        for cmd, output_file in [(cmd_first, b0_first), (cmd_second, b0_second)]:
             try:
                 self.logger.debug(f"Running: {' '.join(cmd)}")
                 result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -222,29 +244,30 @@ class DistortionCorrector(BaseProcessor):
                 self.logger.error(error_msg)
                 raise RuntimeError(error_msg)
         
-        return b0_ap, b0_pa
+        return b0_first, b0_second
     
-    def _merge_b0_images(self, b0_ap: Path, b0_pa: Path, topup_dir: Path, subject_id: str) -> Path:
+    def _merge_b0_images(self, b0_first: Path, b0_second: Path, topup_dir: Path, subject_id: str, pe_direction: str) -> Path:
         """
-        Merge AP and PA B0 images for TopUp processing.
+        Merge dual phase encoding B0 images for TopUp processing.
         
         Args:
-            b0_ap: AP B0 image path
-            b0_pa: PA B0 image path
+            b0_first: First direction B0 image path
+            b0_second: Second direction B0 image path
             topup_dir: TopUp working directory
             subject_id: Subject identifier
+            pe_direction: Phase encoding direction string (e.g., "AP-PA", "LR-RL")
             
         Returns:
             Path to merged B0 image
         """
-        merged_b0 = topup_dir / f"{subject_id}_dir-AP-PA_dwi.nii.gz"
+        merged_b0 = topup_dir / f"{subject_id}_dir-{pe_direction}_dwi.nii.gz"
         
         cmd = [
             "fslmerge",
             "-t",
             str(merged_b0.resolve()),
-            str(b0_ap.resolve()),
-            str(b0_pa.resolve())
+            str(b0_first.resolve()),
+            str(b0_second.resolve())
         ]
         
         try:
@@ -261,13 +284,14 @@ class DistortionCorrector(BaseProcessor):
         
         return merged_b0
     
-    def _create_acquisition_params(self, pe_files: Dict[str, Path], topup_dir: Path) -> Path:
+    def _create_acquisition_params(self, pe_files: Dict[str, Path], topup_dir: Path, pe_direction: str) -> Path:
         """
         Create acquisition parameters file for TopUp.
         
         Args:
-            pe_files: Dictionary with AP and PA file paths
+            pe_files: Dictionary with first and second file paths
             topup_dir: TopUp working directory
+            pe_direction: Phase encoding direction string (e.g., "AP-PA", "LR-RL")
             
         Returns:
             Path to acquisition parameters file
@@ -277,19 +301,28 @@ class DistortionCorrector(BaseProcessor):
         # Try to get readout time from JSON metadata
         readout_time = self._get_readout_time(pe_files)
         
-        # Create acquisition parameters
+        # Create acquisition parameters based on phase encoding direction
         # Format: PhaseEncodingDirection + ReadoutTime
-        # AP (0 1 0) and PA (0 -1 0) with readout time
-        acq_params = [
-            f"0 1 0 {readout_time}",   # AP
-            f"0 -1 0 {readout_time}"   # PA
-        ]
+        if pe_direction == "AP-PA":
+            # AP (0 1 0) and PA (0 -1 0) with readout time
+            acq_params = [
+                f"0 1 0 {readout_time}",   # AP
+                f"0 -1 0 {readout_time}"   # PA
+            ]
+        elif pe_direction == "LR-RL":
+            # LR (1 0 0) and RL (-1 0 0) with readout time
+            acq_params = [
+                f"1 0 0 {readout_time}",   # LR
+                f"-1 0 0 {readout_time}"   # RL
+            ]
+        else:
+            raise ValueError(f"Unsupported phase encoding direction: {pe_direction}")
         
         with open(acq_params_file, 'w') as f:
             for line in acq_params:
                 f.write(line + '\n')
         
-        self.logger.debug(f"Created acquisition parameters file: {acq_params_file}")
+        self.logger.debug(f"Created acquisition parameters file for {pe_direction}: {acq_params_file}")
         return acq_params_file
     
     def _get_readout_time(self, pe_files: Dict[str, Path]) -> float:
@@ -297,17 +330,17 @@ class DistortionCorrector(BaseProcessor):
         Extract readout time from JSON metadata.
         
         Args:
-            pe_files: Dictionary with AP and PA file paths
+            pe_files: Dictionary with first and second file paths
             
         Returns:
             Readout time in seconds
         """
         default_readout_time = 0.0959097  # Default from original script
         
-        # Try to get from AP file JSON
-        for direction in ['ap', 'pa']:
-            if pe_files[direction]:
-                json_file = pe_files[direction].parent / f"{pe_files[direction].stem.replace('.nii', '')}.json"
+        # Try to get from first file JSON
+        for key in ['first', 'second']:
+            if pe_files[key]:
+                json_file = pe_files[key].parent / f"{pe_files[key].stem.replace('.nii', '')}.json"
                 if json_file.exists():
                     try:
                         with open(json_file, 'r') as f:
@@ -327,7 +360,7 @@ class DistortionCorrector(BaseProcessor):
         self.logger.warning(f"Using default readout time: {default_readout_time}")
         return default_readout_time
     
-    def _run_topup(self, merged_b0: Path, acq_params: Path, topup_dir: Path, subject_id: str) -> List[Path]:
+    def _run_topup(self, merged_b0: Path, acq_params: Path, topup_dir: Path, subject_id: str, pe_direction: str) -> List[Path]:
         """
         Run FSL TopUp to estimate field inhomogeneity.
         
@@ -336,11 +369,12 @@ class DistortionCorrector(BaseProcessor):
             acq_params: Acquisition parameters file path
             topup_dir: TopUp working directory
             subject_id: Subject identifier
+            pe_direction: Phase encoding direction string (e.g., "AP-PA", "LR-RL")
             
         Returns:
             List of TopUp output files
         """
-        topup_output_base = topup_dir / f"{subject_id}_dir-AP-PA_dwi_Topup"
+        topup_output_base = topup_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup"
         
         # Find the FSL config file
         fsl_config_path = self._find_fsl_config_file()
@@ -360,8 +394,8 @@ class DistortionCorrector(BaseProcessor):
             
             # TopUp creates several output files
             expected_outputs = [
-                topup_dir / f"{subject_id}_dir-AP-PA_dwi_Topup_fieldcoef.nii.gz",
-                topup_dir / f"{subject_id}_dir-AP-PA_dwi_Topup_movpar.txt"
+                topup_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup_fieldcoef.nii.gz",
+                topup_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup_movpar.txt"
             ]
             
             # Check if main output exists (fieldcoef file is the key one)
@@ -410,13 +444,13 @@ class DistortionCorrector(BaseProcessor):
         self.logger.warning(f"FSL config file not found in common locations, using: {config_filename}")
         return config_filename
     
-    def _apply_topup(self, ap_dwi: Path, acq_params: Path, topup_output: Path, 
+    def _apply_topup(self, first_dwi: Path, acq_params: Path, topup_output: Path, 
                      topup_dir: Path, subject_id: str) -> Path:
         """
         Apply TopUp correction to DWI data.
         
         Args:
-            ap_dwi: AP DWI file path
+            first_dwi: First direction DWI file path (AP or LR)
             acq_params: Acquisition parameters file path
             topup_output: TopUp output base path
             topup_dir: TopUp working directory
@@ -429,7 +463,7 @@ class DistortionCorrector(BaseProcessor):
         
         cmd = [
             "applytopup",
-            f"--imain={ap_dwi.resolve()}",
+            f"--imain={first_dwi.resolve()}",
             "--inindex=1",
             f"--datain={acq_params.resolve()}",
             f"--topup={topup_output.resolve()}",
@@ -475,8 +509,8 @@ class DistortionCorrector(BaseProcessor):
             return False
         
         # Check for dual phase encoding files
-        pe_files = self._find_phase_encoding_files(dwi_dir, subject_id)
-        if not pe_files['ap'] or not pe_files['pa']:
+        pe_files, _ = self._find_phase_encoding_files(dwi_dir, subject_id)
+        if not pe_files['first'] or not pe_files['second']:
             self.logger.warning(f"Subject {subject_id} does not have dual phase encoding data")
             return True  # This is valid, but TopUp will be skipped
         
