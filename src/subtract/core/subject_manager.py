@@ -284,6 +284,8 @@ class SubjectManager:
             "copy_data": analysis_dir.exists(),
             "denoise": (analysis_dir / "dwi").exists() and 
                       any((analysis_dir / "dwi").glob("*denoised*")),
+            "degibbs": (analysis_dir / "dwi").exists() and 
+                      any((analysis_dir / "dwi").glob("*degibbs*")),
             "topup": (analysis_dir / "dwi" / "Topup").exists(),
             "eddy": (analysis_dir / "dwi" / "Eddy").exists(),
             "registration": (analysis_dir / "dwi" / "Reg").exists(),

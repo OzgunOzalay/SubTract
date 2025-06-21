@@ -396,21 +396,31 @@ class EddyCorrector(BaseProcessor):
         try:
             self.logger.debug(f"Running: {' '.join(cmd)}")
             
-            # Run eddy from the eddy directory with unbuffered output
+            # Run eddy from the eddy directory with binary output handling
             result = subprocess.run(
                 cmd,
                 cwd=eddy_dir,
                 capture_output=True,
-                text=True,
                 check=True,
                 bufsize=0  # Unbuffered output
             )
             
-            # Log eddy output immediately
+            # Handle output carefully - Eddy may produce binary output
             if result.stdout:
-                self.logger.debug(f"Eddy stdout: {result.stdout}")
+                try:
+                    stdout_text = result.stdout.decode('utf-8', errors='ignore')
+                    if stdout_text.strip():
+                        self.logger.debug(f"Eddy stdout: {stdout_text}")
+                except UnicodeDecodeError:
+                    self.logger.debug("Eddy produced binary stdout (normal for FSL tools)")
+            
             if result.stderr:
-                self.logger.debug(f"Eddy stderr: {result.stderr}")
+                try:
+                    stderr_text = result.stderr.decode('utf-8', errors='ignore')
+                    if stderr_text.strip():
+                        self.logger.debug(f"Eddy stderr: {stderr_text}")
+                except UnicodeDecodeError:
+                    self.logger.debug("Eddy produced binary stderr (normal for FSL tools)")
             
             # Check for expected outputs
             expected_outputs = [
@@ -440,7 +450,15 @@ class EddyCorrector(BaseProcessor):
             return actual_outputs
             
         except subprocess.CalledProcessError as e:
-            error_msg = f"Eddy correction failed: {e.stderr}"
+            # Handle stderr carefully for error reporting
+            error_stderr = ""
+            if e.stderr:
+                try:
+                    error_stderr = e.stderr.decode('utf-8', errors='ignore')
+                except UnicodeDecodeError:
+                    error_stderr = "Binary error output (cannot decode)"
+            
+            error_msg = f"Eddy correction failed: {error_stderr}"
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
     
