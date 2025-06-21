@@ -335,7 +335,7 @@ class DistortionCorrector(BaseProcessor):
         Returns:
             Readout time in seconds
         """
-        default_readout_time = 0.0959097  # Default from original script
+        hcp_readout_time = 0.11154  # Fixed HCP Total Readout Time value
         
         # Try to get from first file JSON
         for key in ['first', 'second']:
@@ -346,19 +346,17 @@ class DistortionCorrector(BaseProcessor):
                         with open(json_file, 'r') as f:
                             metadata = json.load(f)
                         
-                        # Calculate readout time from metadata
+                        # Use TotalReadoutTime if available in metadata
                         if 'TotalReadoutTime' in metadata:
+                            self.logger.info(f"Using TotalReadoutTime from JSON: {metadata['TotalReadoutTime']}")
                             return metadata['TotalReadoutTime']
-                        elif 'EffectiveEchoSpacing' in metadata and 'ReconMatrixPE' in metadata:
-                            # Calculate: (ReconMatrixPE - 1) * EffectiveEchoSpacing
-                            readout_time = (metadata['ReconMatrixPE'] - 1) * metadata['EffectiveEchoSpacing']
-                            return readout_time
                             
                     except (json.JSONDecodeError, KeyError) as e:
                         self.logger.warning(f"Could not read readout time from {json_file}: {e}")
         
-        self.logger.warning(f"Using default readout time: {default_readout_time}")
-        return default_readout_time
+        # If TotalReadoutTime is not found, use the fixed HCP value
+        self.logger.info(f"TotalReadoutTime not found in JSON metadata, using HCP default: {hcp_readout_time}")
+        return hcp_readout_time
     
     def _run_topup(self, merged_b0: Path, acq_params: Path, topup_dir: Path, subject_id: str, pe_direction: str) -> List[Path]:
         """
