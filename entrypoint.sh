@@ -31,6 +31,9 @@ if [ $# -eq 0 ]; then
     echo "  docker run subtract-pipeline run-config /data/config.yaml"
     echo "  docker run subtract-pipeline run /data/bids --steps tractography"
     echo "  docker run -it <image> bash"
+    echo ""
+    echo "Available conda environments:"
+    conda env list
     exit 1
 fi
 
@@ -43,11 +46,18 @@ conda env list
 echo ""
 echo "Tool availability:"
 echo "  FSL: $(which fsl 2>/dev/null || echo "not found") - Version: $(cat $FSLDIR/etc/fslversion 2>/dev/null || echo "unknown")"
-echo "  MRtrix3 (subtract env): /opt/miniconda/envs/subtract/bin/mrconvert, /opt/miniconda/envs/subtract/bin/mrdegibbs"
-echo "  ANTs (ants env): /opt/miniconda/envs/ants/bin/antsRegistration"
-echo "  MDT (mdt env): $(conda run -n mdt python -c 'import mdt; print(mdt.__version__)' 2>/dev/null || echo "not found")"
+echo "  MRtrix3 (system): $(which dwidenoise 2>/dev/null || echo "not found")"
+echo "  ANTs (ants env): $(conda run -n ants which antsRegistration 2>/dev/null || echo "not found")"
 echo "  SubTract: $(conda run -n subtract which subtract 2>/dev/null || echo "not found")"
 echo ""
 
+# Determine which environment to use based on command
+# Most SubTract commands run in the subtract environment
+ENVIRONMENT="subtract"
+
 # Run the pipeline using conda run to ensure proper environment activation
-conda run -n subtract subtract "$COMMAND" "$@" 
+# But ensure system MRtrix3 is available in the environment
+echo "Using conda environment: $ENVIRONMENT"
+export PATH="/opt/mrtrix3-3.0.4/bin:/opt/fsl-6.0.7.1/bin:$PATH"
+export LD_LIBRARY_PATH="/opt/mrtrix3-3.0.4/lib:$LD_LIBRARY_PATH"
+conda run -n $ENVIRONMENT subtract "$COMMAND" "$@" 

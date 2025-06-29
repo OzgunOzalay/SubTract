@@ -86,10 +86,9 @@ class ProcessingConfig(BaseModel):
     # Tractography parameters
     n_tracks: int = Field(default=1000000, description="Number of tracks to generate")
     track_algorithm: str = Field(default="iFOD2", description="Tracking algorithm")
-    track_cutoff: float = Field(default=0.1, description="FOD amplitude cutoff for terminating tracks (default: 0.1)")
+    track_cutoff: float = Field(default=0.045, description="FOD amplitude cutoff for terminating tracks (default: 0.045, multiplied by 0.5 when using ACT)")
     
     # SIFT2 parameters
-    sift2_term_ratio: float = Field(default=0.1, description="SIFT2 minimum cost function decrease (as fraction of initial value) for algorithm continuation")
     sift2_ndi_threshold: float = Field(default=0.1, description="NDI threshold for SIFT2 processing mask")
     sift2_output_coeffs: bool = Field(default=True, description="Generate SIFT2 coefficients files")
     sift2_output_mu: bool = Field(default=True, description="Generate mu (proportionality coefficient) files")
@@ -101,19 +100,19 @@ class ROIConfig(BaseModel):
     
     roi_names: List[str] = Field(
         default=[
-            "Amyg_L_MNI", "Amyg_R_MNI",
-            "BNST_L_MNI", "BNST_R_MNI", 
-            "Hipp_L_MNI", "Hipp_R_MNI",
-            "Insl_L_MNI", "Insl_R_MNI",
-            "vmPF_L_MNI", "vmPF_R_MNI",
-            "Hypo_L_MNI", "Hypo_R_MNI"
+            "L_bnst_fsaverage", "R_bnst_fsaverage",
+            "L_amygdala_fsaverage", "R_amygdala_fsaverage",
+            "L_hippocampus_fsaverage", "R_hippocampus_fsaverage",
+            "L_vmPFC_fsaverage", "R_vmPFC_fsaverage",
+            "L_insula_fsaverage", "R_insula_fsaverage",
+            "L_hypothalamus_fsaverage", "R_hypothalamus_fsaverage"
         ],
-        description="List of ROI names to process"
+        description="List of ROI names in fsaverage space to process"
     )
     
-    target_rois: List[str] = Field(
-        default=["BNST_L", "BNST_R"],
-        description="Target ROIs for tractography"
+    gmwm_boundary: bool = Field(
+        default=True,
+        description="Use GM-WM boundary for tractography"
     )
 
 
@@ -164,9 +163,9 @@ class SubtractConfig(BaseModel):
         paths = PathConfig(
             base_path=base_path,
             data_dir=base_path / "Data",
-            analysis_dir=base_path / "Analysis", 
-            result_dir=base_path / "Results",
-            script_dir=base_path / "Scripts"
+            analysis_dir=base_path / "derivatives" / "subtract", 
+            result_dir=base_path / "derivatives" / "subtract" / "results",
+            script_dir=base_path / "src"
         )
         
         return cls(paths=paths)
