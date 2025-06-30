@@ -22,7 +22,7 @@ class DistortionCorrector(BaseProcessor):
     TopUp distortion correction processor using FSL TopUp.
     
     This processor corrects distortions caused by magnetic field inhomogeneities
-    using dual phase encoding (AP/PA or LR/RL) DWI data and FSL TopUp.
+    using dual phase encoding (AP/PA) DWI data and FSL TopUp.
     """
     
     def __init__(self, config: SubtractConfig, logger: Optional[logging.Logger] = None):
@@ -155,19 +155,17 @@ class DistortionCorrector(BaseProcessor):
     
     def _find_phase_encoding_files(self, dwi_dir: Path, subject_id: str) -> Tuple[Dict[str, Optional[Path]], str]:
         """
-        Find dual phase encoding DWI files (AP/PA or LR/RL).
+        Find dual phase encoding DWI files (AP/PA).
         
         Args:
             dwi_dir: DWI directory path
             subject_id: Subject identifier
-            
+        
         Returns:
-            Tuple of (file dictionary, phase encoding direction string)
+            Tuple of (dict with first/second file paths, phase encoding direction string)
         """
-        # Define phase encoding direction pairs
         pe_pairs = {
-            'AP-PA': ['AP', 'PA'],
-            'LR-RL': ['LR', 'RL']
+            'AP-PA': ['AP', 'PA']
         }
         
         # Look for denoised files first, then original files
@@ -291,7 +289,7 @@ class DistortionCorrector(BaseProcessor):
         Args:
             pe_files: Dictionary with first and second file paths
             topup_dir: TopUp working directory
-            pe_direction: Phase encoding direction string (e.g., "AP-PA", "LR-RL")
+            pe_direction: Phase encoding direction string (e.g., "AP-PA")
             
         Returns:
             Path to acquisition parameters file
@@ -302,21 +300,15 @@ class DistortionCorrector(BaseProcessor):
         readout_time = self._get_readout_time(pe_files)
         
         # Create acquisition parameters based on phase encoding direction
-        # Format: PhaseEncodingDirection + ReadoutTime
+        # Only AP-PA is supported
         if pe_direction == "AP-PA":
             # AP (0 1 0) and PA (0 -1 0) with readout time
             acq_params = [
                 f"0 1 0 {readout_time}",   # AP
                 f"0 -1 0 {readout_time}"   # PA
             ]
-        elif pe_direction == "LR-RL":
-            # LR (1 0 0) and RL (-1 0 0) with readout time
-            acq_params = [
-                f"1 0 0 {readout_time}",   # LR
-                f"-1 0 0 {readout_time}"   # RL
-            ]
         else:
-            raise ValueError(f"Unsupported phase encoding direction: {pe_direction}")
+            raise ValueError(f"Unsupported phase encoding direction: {pe_direction}. Only AP-PA is supported.")
         
         with open(acq_params_file, 'w') as f:
             for line in acq_params:
@@ -335,8 +327,6 @@ class DistortionCorrector(BaseProcessor):
         Returns:
             Readout time in seconds
         """
-        hcp_readout_time = 0.11154  # Fixed HCP Total Readout Time value
-        
         # Try to get from first file JSON
         for key in ['first', 'second']:
             if pe_files[key]:
@@ -354,9 +344,15 @@ class DistortionCorrector(BaseProcessor):
                     except (json.JSONDecodeError, KeyError) as e:
                         self.logger.warning(f"Could not read readout time from {json_file}: {e}")
         
-        # If TotalReadoutTime is not found, use the fixed HCP value
-        self.logger.info(f"TotalReadoutTime not found in JSON metadata, using HCP default: {hcp_readout_time}")
-        return hcp_readout_time
+        # Check if readout time is specified in config
+        if self.config.processing.readout_time is not None:
+            self.logger.info(f"Using readout time from configuration: {self.config.processing.readout_time}")
+            return self.config.processing.readout_time
+        
+        # If no readout time found, raise an error
+        error_msg = "TotalReadoutTime not found in JSON metadata and not specified in configuration. Please either: 1) Add TotalReadoutTime to your DWI JSON files, or 2) Set readout_time in your configuration file."
+        self.logger.error(error_msg)
+        raise ValueError(error_msg)
     
     def _run_topup(self, merged_b0: Path, acq_params: Path, topup_dir: Path, subject_id: str, pe_direction: str) -> List[Path]:
         """

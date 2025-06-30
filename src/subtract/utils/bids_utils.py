@@ -117,16 +117,17 @@ class BIDSLayout:
         # Find all DWI NIfTI files (both .nii.gz and .nii)
         for suffix in self.config.bids.dwi_suffixes:
             # Try both .nii.gz and .nii extensions
+            nii_files = []
             for ext in ['.nii.gz', '.nii']:
                 pattern = f"*_{suffix}{ext}"
-                nii_files = list(dwi_dir.glob(pattern))
+                nii_files.extend(list(dwi_dir.glob(pattern)))
             
             for nii_file in nii_files:
                 # Extract BIDS entities from filename
                 entities = self._parse_bids_filename(nii_file.name)
                 
                 # Find associated files
-                base_name = nii_file.name.replace(ext, '')
+                base_name = nii_file.name.replace('.nii.gz', '').replace('.nii', '')
                 
                 bval_file = dwi_dir / f"{base_name}.bval"
                 bvec_file = dwi_dir / f"{base_name}.bvec"
@@ -172,25 +173,26 @@ class BIDSLayout:
         
         for suffix in anat_suffixes:
             # Try both .nii.gz and .nii extensions
+            nii_files = []
             for ext in ['.nii.gz', '.nii']:
                 pattern = f"*_{suffix}{ext}"
-                nii_files = list(anat_dir.glob(pattern))
+                nii_files.extend(list(anat_dir.glob(pattern)))
                 
-                for nii_file in nii_files:
-                    entities = self._parse_bids_filename(nii_file.name)
-                    base_name = nii_file.name.replace(ext, '')
-                    json_file = anat_dir / f"{base_name}.json"
-                    
-                    anat_info = {
-                        'nii': nii_file,
-                        'json': json_file if json_file.exists() else None,
-                        'entities': entities,
-                        'subject': subject,
-                        'session': session,
-                        'suffix': suffix
-                    }
-                    
-                    anat_files.append(anat_info)
+            for nii_file in nii_files:
+                entities = self._parse_bids_filename(nii_file.name)
+                base_name = nii_file.name.replace('.nii.gz', '').replace('.nii', '')
+                json_file = anat_dir / f"{base_name}.json"
+                
+                anat_info = {
+                    'nii': nii_file,
+                    'json': json_file if json_file.exists() else None,
+                    'entities': entities,
+                    'subject': subject,
+                    'session': session,
+                    'suffix': suffix
+                }
+                
+                anat_files.append(anat_info)
         
         return anat_files
     
@@ -224,7 +226,7 @@ class BIDSLayout:
             session: Session ID (without 'ses-' prefix), optional
             
         Returns:
-            Dictionary mapping phase encoding directions to DWI files
+            Dictionary mapping phase encoding directions (AP/PA) to DWI files
         """
         dwi_files = self.get_dwi_files(subject, session)
         pe_groups = {}
@@ -305,9 +307,7 @@ class BIDSLayout:
             # Map BIDS phase encoding directions to common abbreviations
             pe_mapping = {
                 'j-': 'AP',  # Anterior to Posterior
-                'j': 'PA',   # Posterior to Anterior
-                'i-': 'RL',  # Right to Left
-                'i': 'LR'    # Left to Right
+                'j': 'PA'   # Posterior to Anterior
             }
             
             return pe_mapping.get(pe_direction)

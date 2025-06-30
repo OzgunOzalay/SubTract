@@ -44,8 +44,8 @@ class BIDSConfig(BaseModel):
     
     # Phase encoding directions for TopUp
     phase_encoding_directions: List[str] = Field(
-        default=["AP", "PA", "LR", "RL"],
-        description="Phase encoding directions to look for"
+        default=["AP", "PA"],
+        description="Phase encoding directions to look for (only AP and PA supported)"
     )
     
     # Required BIDS files

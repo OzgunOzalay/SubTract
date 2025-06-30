@@ -161,10 +161,10 @@ class EddyCorrector(BaseProcessor):
             subject_id: Subject identifier
             
         Returns:
-            Phase encoding direction string (e.g., "AP-PA", "LR-RL") or None if not found
+            Phase encoding direction string (e.g., "AP-PA") or None if not found
         """
         # Look for TopUp field coefficient files with different phase encoding directions
-        possible_directions = ["AP-PA", "LR-RL"]
+        possible_directions = ["AP-PA"]
         
         for direction in possible_directions:
             fieldcoef_file = topup_dir / f"{subject_id}_dir-{direction}_dwi_Topup_fieldcoef.nii.gz"
@@ -185,7 +185,7 @@ class EddyCorrector(BaseProcessor):
             dwi_dir: DWI directory path
             topup_dir: TopUp directory path
             eddy_dir: Eddy directory path
-            pe_direction: Phase encoding direction string (e.g., "AP-PA", "LR-RL")
+            pe_direction: Phase encoding direction string (e.g., "AP-PA")
             
         Returns:
             List of copied files
@@ -200,25 +200,24 @@ class EddyCorrector(BaseProcessor):
              eddy_dir / "acq_params.txt"),
             
             # From TopUp: field coefficients
-            (topup_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup_fieldcoef.nii.gz",
-             eddy_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup_fieldcoef.nii.gz"),
+            (topup_dir / f"{subject_id}_dir-AP-PA_dwi_Topup_fieldcoef.nii.gz",
+             eddy_dir / f"{subject_id}_dir-AP-PA_dwi_Topup_fieldcoef.nii.gz"),
             
             # From TopUp: movement parameters
-            (topup_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup_movpar.txt",
-             eddy_dir / f"{subject_id}_dir-{pe_direction}_dwi_Topup_movpar.txt"),
+            (topup_dir / f"{subject_id}_dir-AP-PA_dwi_Topup_movpar.txt",
+             eddy_dir / f"{subject_id}_dir-AP-PA_dwi_Topup_movpar.txt"),
         ]
         
-        # Copy bvals and bvecs from DWI directory (use first direction from pe_direction)
-        first_direction = pe_direction.split('-')[0]  # AP from AP-PA, LR from LR-RL
+        # Copy bvals and bvecs from DWI directory (use AP direction)
         for suffix in ['.bval', '.bvec']:
-            pattern = f"*{subject_id}*dir-{first_direction}*dwi{suffix}"
+            pattern = f"*{subject_id}*dir-AP*dwi{suffix}"
             files = list(dwi_dir.glob(pattern))
             if files:
                 source_file = files[0]
                 dest_file = eddy_dir / f"{subject_id}_dwi{suffix}"
                 files_to_copy.append((source_file, dest_file))
             else:
-                raise FileNotFoundError(f"Could not find {suffix} file for {subject_id} with direction {first_direction}")
+                raise FileNotFoundError(f"Could not find {suffix} file for {subject_id} with direction AP")
         
         # Copy files
         copied_files = []
@@ -360,7 +359,7 @@ class EddyCorrector(BaseProcessor):
         Args:
             subject_id: Subject identifier
             eddy_dir: Eddy directory path
-            pe_direction: Phase encoding direction string (e.g., "AP-PA", "LR-RL")
+            pe_direction: Phase encoding direction string (e.g., "AP-PA")
             
         Returns:
             List of output files from Eddy
@@ -505,13 +504,12 @@ class EddyCorrector(BaseProcessor):
                 self.logger.error(f"Required TopUp file not found: {file_path}")
                 return False
         
-        # Check for bval/bvec files (use first direction from pe_direction)
-        first_direction = pe_direction.split('-')[0]
-        bval_files = list(dwi_dir.glob(f"*{subject_id}*dir-{first_direction}*dwi.bval"))
-        bvec_files = list(dwi_dir.glob(f"*{subject_id}*dir-{first_direction}*dwi.bvec"))
+        # Check for bval/bvec files (use AP direction)
+        bval_files = list(dwi_dir.glob(f"*{subject_id}*dir-AP*dwi.bval"))
+        bvec_files = list(dwi_dir.glob(f"*{subject_id}*dir-AP*dwi.bvec"))
         
         if not bval_files or not bvec_files:
-            self.logger.error(f"bval/bvec files not found for {subject_id} with direction {first_direction}")
+            self.logger.error(f"bval/bvec files not found for {subject_id} with direction AP")
             return False
         
         # Check that FSL commands are available

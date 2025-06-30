@@ -18,7 +18,7 @@ bids:
   tasks: null                        # null = all tasks, or specify: ["rest", "task"]
   runs: null                         # null = all runs, or specify: ["1", "2"]
   dwi_suffixes: ["dwi"]             # DWI file suffixes to process
-  phase_encoding_directions: ["AP", "PA", "LR", "RL"]  # Expected phase encoding directions
+  phase_encoding_directions: ["AP", "PA"]  # Expected phase encoding directions
   required_dwi_files: ["dwi.nii.gz", "dwi.bval", "dwi.bvec"]  # Required DWI files
   optional_files: ["dwi.json", "T1w.nii.gz", "T2w.nii.gz"]    # Optional files
 

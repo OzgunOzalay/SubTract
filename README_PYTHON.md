@@ -176,7 +176,7 @@ bids_dataset/
 
 - **DWI data**: `*_dwi.nii.gz` with corresponding `.bval` and `.bvec` files
 - **JSON sidecars**: Metadata files with acquisition parameters
-- **Dual phase encoding**: AP/PA or LR/RL acquisitions for distortion correction
+- **Dual phase encoding**: AP/PA acquisitions for distortion correction
 
 ### Optional Files
 
@@ -252,7 +252,7 @@ bids:
   bids_version: "1.8.0"
   sessions: ["baseline", "followup"]  # Optional: specific sessions
   dwi_suffixes: ["dwi"]
-  phase_encoding_directions: ["AP", "PA", "LR", "RL"]
+  phase_encoding_directions: ["AP", "PA"]
   required_dwi_files: ["dwi.nii.gz", "dwi.bval", "dwi.bvec"]
   optional_files: ["dwi.json", "T1w.nii.gz"]
 ```
